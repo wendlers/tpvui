@@ -4,7 +4,9 @@
 // When compiling natively:
 #[cfg(not(target_arch = "wasm32"))]
 fn main() -> eframe::Result {
-    env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
+    // env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
+    colog::init();
+    log::info!("tpvui");
 
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
@@ -20,7 +22,7 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "eframe template",
         native_options,
-        Box::new(|cc| Ok(Box::new(eframe_template::TemplateApp::new(cc)))),
+        Box::new(|cc| Ok(Box::new(tpvui::TpvUiApp::new(cc)))),
     )
 }
 
@@ -50,7 +52,7 @@ fn main() {
             .start(
                 canvas,
                 web_options,
-                Box::new(|cc| Ok(Box::new(eframe_template::TemplateApp::new(cc)))),
+                Box::new(|cc| Ok(Box::new(tpvui::TpvUiApp::new(cc)))),
             )
             .await;
 
