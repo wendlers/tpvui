@@ -78,8 +78,8 @@ impl TpvFocus {
 
 #[derive(Clone, PartialEq)]
 pub enum DataSourceStatus {
-    Connected,
-    Disconnected,
+    Ok,
+    NotOk,
 }
 
 #[derive(Clone)]
@@ -94,8 +94,9 @@ impl DataSource {
     pub fn new() -> DataSource {
         DataSource {
             started: false,
-            status: DataSourceStatus::Disconnected,
-            uri: String::from("http://192.168.2.118:8080"),
+            status: DataSourceStatus::NotOk,
+            uri: String::from("http://localhost:8080"),
+            // uri: String::from("http://192.168.2.118:8080"),
             frame: 0,
         }
     }
@@ -164,7 +165,7 @@ impl DataCollector {
                     // all good, we got the data
                     {
                         let mut source_locked = source.lock().unwrap();
-                        source_locked.status = DataSourceStatus::Connected;
+                        source_locked.status = DataSourceStatus::Ok;
                         source_locked.frame += 1;
                     }
                     thread::sleep(time::Duration::from_millis(250));
@@ -172,7 +173,7 @@ impl DataCollector {
                 // failed to get  the data
                 {
                     let mut source_locked = source.lock().unwrap();
-                    source_locked.status = DataSourceStatus::Disconnected;
+                    source_locked.status = DataSourceStatus::NotOk;
                 }
 
                 log::warn!("Failed to retrive 'focus' data");

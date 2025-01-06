@@ -1,4 +1,6 @@
 use core::time;
+use egui::Color32;
+
 use crate::data::{DataCollector, DataSourceStatus};
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
@@ -6,10 +8,7 @@ use crate::data::{DataCollector, DataSourceStatus};
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct TpvUiApp {
     // Example stuff:
-    label: String,
-
-    #[serde(skip)] // This how you opt-out of serialization of a field
-    value: f32,
+    // label: String,
 
     #[serde(skip)]
     dc: DataCollector,
@@ -18,9 +17,6 @@ pub struct TpvUiApp {
 impl Default for TpvUiApp {
     fn default() -> Self {
         Self {
-            // Example stuff:
-            label: "Hello World!".to_owned(),
-            value: 2.7,
             dc: DataCollector::new(),
         }
     }
@@ -51,17 +47,9 @@ impl eframe::App for TpvUiApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.dc.start();
 
-        let ds = self.dc.get_data_source();
-        let mut status = String::from("connected");
-
-        if ds.status == DataSourceStatus::Disconnected {
-            status = String::from("disconnected");
-        }
-
-        status.push_str(&format!(" (frame {})", ds.frame));
-
         ctx.request_repaint_after(time::Duration::from_millis(250));
-        ctx.set_pixels_per_point(3.5);
+        ctx.set_pixels_per_point(1.0);
+
         // Put your widgets into a `SidePanel`, `TopBottomPanel`, `CentralPanel`, `Window` or `Area`.
         // For inspiration and more examples, go to https://emilk.github.io/egui
 
@@ -99,15 +87,6 @@ impl eframe::App for TpvUiApp {
                 ui.label("Time").highlight();
                 ui.label(format!("{} s", focus.time));
                 ui.end_row();
-
-                //ui.separator();
-                //ui.separator();
-                //ui.separator();
-                //ui.separator();
-                //ui.separator();
-                //ui.separator();
-                //ui.separator();
-                //ui.separator();
                 ui.end_row();
 
                 ui.label("Power").highlight();
@@ -119,15 +98,6 @@ impl eframe::App for TpvUiApp {
                 ui.label("Nrm. Power").highlight();
                 ui.label(format!("{} W", focus.nrmPower));
                 ui.end_row();
-
-                //ui.separator();
-                //ui.separator();
-                //ui.separator();
-                //ui.separator();
-                //ui.separator();
-                //ui.separator();
-                //ui.separator();
-                //ui.separator();
                 ui.end_row();
 
                 ui.label("HR").highlight();
@@ -137,15 +107,6 @@ impl eframe::App for TpvUiApp {
                 ui.label("Max. HR").highlight();
                 ui.label(format!("{} bpm", focus.maxHeartrate));
                 ui.end_row();
-
-                //ui.separator();
-                //ui.separator();
-                //ui.separator();
-                //ui.separator();
-                //ui.separator();
-                //ui.separator();
-                //ui.separator();
-                //ui.separator();
                 ui.end_row();
 
                 ui.label("Cadence").highlight();
@@ -155,15 +116,6 @@ impl eframe::App for TpvUiApp {
                 ui.label("Max. Cadence").highlight();
                 ui.label(format!("{} rpm", focus.maxCadence));
                 ui.end_row();
-
-                //ui.separator();
-                //ui.separator();
-                //ui.separator();
-                //ui.separator();
-                //ui.separator();
-                //ui.separator();
-                //ui.separator();
-                //ui.separator();
                 ui.end_row();
 
                 ui.label("Windspeed").highlight();
@@ -174,11 +126,40 @@ impl eframe::App for TpvUiApp {
                 ui.label(format!("{} %", focus.slope));
                 ui.end_row();
             });
+        });
 
-            ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
-                ui.label(format!("Server is {}", status));
-                egui::warn_if_debug_build(ui);
-            });
+        egui::TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| {
+            let ds = self.dc.get_data_source();
+            let mut status = String::from("focus");
+            let mut color = Color32::GREEN;
+    
+            if ds.status == DataSourceStatus::NotOk {
+                status.push_str(" ⚠ ");
+                color = Color32::RED;
+            } else {
+                status.push_str(" ☭ ");
+            }
+    
+            status.push_str(&format!("{:08}", ds.frame));
+    
+            ui.with_layout(
+                egui::Layout::left_to_right(egui::Align::Center), |ui| {
+                    if cfg!(debug_assertions) {
+                        ui.label(
+                            egui::RichText::new("☢ Debug build ☢")
+                                    .color(ui.visuals().warn_fg_color),
+                        )
+                        .on_hover_text("tpvui was compiled with debug enabled");
+                        ui.add(egui::Separator::default().vertical());
+                    }
+
+                    ui.label(
+                        egui::RichText::new(status)
+                            .color(color)
+                    );
+                    ui.add(egui::Separator::default().vertical());
+                }
+            );
         });
     }
 }
