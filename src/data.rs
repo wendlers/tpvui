@@ -1,5 +1,4 @@
 use std::{sync::{Arc, Mutex}, thread, time};
-use reqwest::blocking::Response;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Clone)]
@@ -76,6 +75,36 @@ impl TpvFocus {
     }
 }
 
+#[derive(Debug, Deserialize, Clone)]
+#[allow(dead_code, non_snake_case)]
+pub struct TpvNearest {
+    name: String,
+    country: String,
+    team: String,
+    teamCode: String,
+    speed: u32,
+    timeGap: i32,
+    position: u32,
+    distance: u32,
+    isEliminated: bool,    
+}
+
+impl TpvNearest {
+    fn new() -> TpvNearest {
+        TpvNearest {
+            name: String::from("--"),
+            country: String::from("--"),
+            team: String::from("--"),
+            teamCode: String::from("--"),
+            speed: 0,
+            timeGap: 0,
+            position: 0,
+            distance: 0,
+            isEliminated: false,    
+        }
+    }    
+}
+
 #[derive(Clone, PartialEq)]
 pub enum DataSourceStatus {
     Ok,
@@ -86,7 +115,7 @@ pub enum DataSourceStatus {
 pub struct DataSource {
     pub started: bool,
     pub status: DataSourceStatus,
-    pub uri: String,
+    // pub uri: String,
     pub frame: u64,
 }
 
@@ -95,8 +124,8 @@ impl DataSource {
         DataSource {
             started: false,
             status: DataSourceStatus::NotOk,
-            uri: String::from("http://localhost:8080"),
             // uri: String::from("http://192.168.2.118:8080"),
+            // uri: String::from("http://localhost:8080"),
             frame: 0,
         }
     }
@@ -104,100 +133,205 @@ impl DataSource {
 
 #[derive(Clone)]
 pub struct DataCollector {
-    source: Arc<Mutex<DataSource>>, 
-    focus: Arc<Mutex<TpvFocus>>,
+    // TPV raw 'focus' data
+    source_focus: Arc<Mutex<DataSource>>, 
+    data_focus: Arc<Mutex<TpvFocus>>,
+    // TPV raw 'nearest' data
+    source_nearest: Arc<Mutex<DataSource>>, 
+    data_nearest: Arc<Mutex<TpvNearest>>,
 }
-
 
 impl DataCollector {
     pub fn new() -> DataCollector {
-        // let driver_master = Arc::new(Mutex::new(0));
-        // let driver  = Arc::clone(&driver_master);
         DataCollector {
-            source:  Arc::new(Mutex::new(DataSource::new())),
-            focus:  Arc::new(Mutex::new(TpvFocus::new())),
+            source_focus:  Arc::new(Mutex::new(DataSource::new())),
+            data_focus:  Arc::new(Mutex::new(TpvFocus::new())),
+            source_nearest:  Arc::new(Mutex::new(DataSource::new())),
+            data_nearest:  Arc::new(Mutex::new(TpvNearest::new())),
         }
     }
 
     fn collect_focus(&self) {
-        let source = Arc::clone(&self.source);
-        let focus = Arc::clone(&self.focus);
+        let source = Arc::clone(&self.source_focus);
+        let focus = Arc::clone(&self.data_focus);
 
         thread::spawn(move || {
             log::info!("DataCollector thread for 'focus' started");
 
+            let status:Arc<Mutex<u16>>  = Arc::new(Mutex::new(0));
+            let body:Arc<Mutex<String>>  = Arc::new(Mutex::new(String::new()));
+
             loop {
-                loop {
-                    // thread::sleep(time::Duration::from_millis(1000));
-                    log::info!("Collecting 'focus' data");
+                let status_clone = Arc::clone(&status);
+                let body_clone = Arc::clone(&body);
+                let request = ehttp::Request::get("http://localhost:8080/bcast/focus");
 
-                    let url: String; 
+                ehttp::fetch(request, move |result: ehttp::Result<ehttp::Response>| {
+                    match result {
+                        Ok(r) => (|response: &ehttp::Response| {
+                            let mut status_locked = status_clone.lock().unwrap();
+                            *status_locked = response.status;
+                            match response.text() {
+                                Some(s) => (|body: &str|{
+                                    let mut body_locked = body_clone.lock().unwrap();
+                                    *body_locked = String::from(body);
+                                })(s),
+                                None => (),
+                            }
+
+                        })(&r),
+                        Err(_) => (|| {
+                            let mut status_locked = status_clone.lock().unwrap();
+                            *status_locked = 0;
+                        })(),
+                    }
+                });
+
+                let last_status: u16;
+                let last_body: String;
+                {
+                    last_status = *status.lock().unwrap();
+                    last_body = body.lock().unwrap().clone();
+                }
+
+                if last_status != 200 {
+                    log::warn!("Failed to retrive 'focus' data");
+                    // failed to get the data
                     {
-                        let source_locked = source.lock().unwrap();
-                        url  = format!("{}/{}", source_locked.uri.clone(), "bcast/focus");
+                        let mut source_locked = source.lock().unwrap();
+                        source_locked.status = DataSourceStatus::NotOk;
                     }
-                    log::info!("GET {}", url);
+                    thread::sleep(time::Duration::from_millis(1000));
+                } else {
+                    let mut focus_list: Vec<TpvFocus> = Vec::new();
 
-                    let res: Response;
-
-                    match reqwest::blocking::get(url) {
-                        Ok(r) => res = r,
-                        Err(_) => break,
+                    match serde_json::from_str(&last_body.as_str()) {
+                        Ok(obj) => focus_list = obj,
+                        Err(_) => () 
                     }
-
-                    log::info!("'focus' Response:\n{:?} {}\nHeaders: {:#?}", res.version(), res.status(), res.headers());
-
-                    let mut focus_list: Vec<TpvFocus>;
                     
-                    match res.json() {
-                        Ok(j) => focus_list = j,
-                        Err(_) => break,    
-                    }
-
                     log::info!("'focus' json:\n{focus_list:#?}");
-                    let mut focus_locked = focus.lock().unwrap();
 
-                    match focus_list.pop() {
-                        Some(f) => *focus_locked = f,
-                        None => log::warn!("Invalid 'focus' data"),
-                    }
-
-                    // all good, we got the data
+                    // all good, we got some data
                     {
                         let mut source_locked = source.lock().unwrap();
                         source_locked.status = DataSourceStatus::Ok;
                         source_locked.frame += 1;
+
+                        let mut focus_locked = focus.lock().unwrap();
+
+                        match focus_list.get(0) {
+                            Some(f) => *focus_locked = f.clone(),
+                            None => (), // empty json array -> ignore
+                        }
                     }
                     thread::sleep(time::Duration::from_millis(250));
-                }
-                // failed to get  the data
+                }           
+            }
+        });
+    }
+
+    fn collect_nearest(&self) {
+        let source = Arc::clone(&self.source_nearest);
+        let focus = Arc::clone(&self.data_nearest);
+
+        thread::spawn(move || {
+            log::info!("DataCollector thread for 'nearest' started");
+
+            let status:Arc<Mutex<u16>>  = Arc::new(Mutex::new(0));
+            let body:Arc<Mutex<String>>  = Arc::new(Mutex::new(String::new()));
+
+            loop {
+                let status_clone = Arc::clone(&status);
+                let body_clone = Arc::clone(&body);
+                let request = ehttp::Request::get("http://localhost:8080/bcast/nearest");
+
+                ehttp::fetch(request, move |result: ehttp::Result<ehttp::Response>| {
+                    match result {
+                        Ok(r) => (|response: &ehttp::Response| {
+                            let mut status_locked = status_clone.lock().unwrap();
+                            *status_locked = response.status;
+                            match response.text() {
+                                Some(s) => (|body: &str|{
+                                    let mut body_locked = body_clone.lock().unwrap();
+                                    *body_locked = String::from(body);
+                                })(s),
+                                None => (),
+                            }
+
+                        })(&r),
+                        Err(_) => (|| {
+                            let mut status_locked = status_clone.lock().unwrap();
+                            *status_locked = 0;
+                        })(),
+                    }
+                });
+
+                let last_status: u16;
+                let last_body: String;
                 {
-                    let mut source_locked = source.lock().unwrap();
-                    source_locked.status = DataSourceStatus::NotOk;
+                    last_status = *status.lock().unwrap();
+                    last_body = body.lock().unwrap().clone();
                 }
 
-                log::warn!("Failed to retrive 'focus' data");
-                // retry ..
-                thread::sleep(time::Duration::from_millis(1000));
+                if last_status != 200 {
+                    log::warn!("Failed to retrive 'nearest' data");
+                    // failed to get the data
+                    {
+                        let mut source_locked = source.lock().unwrap();
+                        source_locked.status = DataSourceStatus::NotOk;
+                    }
+                    thread::sleep(time::Duration::from_millis(1000));
+                } else {
+                    let mut nearest_list: Vec<TpvNearest> = Vec::new();
+
+                    match serde_json::from_str(&last_body.as_str()) {
+                        Ok(obj) => nearest_list = obj,
+                        Err(_) => () 
+                    }
+                    
+                    log::info!("'nearest' json:\n{nearest_list:#?}");
+
+                    // all good, we got some data
+                    {
+                        let mut source_locked = source.lock().unwrap();
+                        source_locked.status = DataSourceStatus::Ok;
+                        source_locked.frame += 1;
+
+                        let mut nearest_locked = focus.lock().unwrap();
+
+                        match nearest_list.get(0) {
+                            Some(f) => *nearest_locked = f.clone(),
+                            None => (), // empty json array -> ignore
+                        }
+                    }
+                    thread::sleep(time::Duration::from_millis(250));
+                }           
             }
         });
     }
 
     pub fn start(&mut self) {
-        let mut s = self.source.lock().unwrap();
+        let mut s = self.source_focus.lock().unwrap();
         if !s.started  {
             log::info!("DataCollector started");
             s.started = true;
+
             self.collect_focus();
+            self.collect_nearest();
         }
     }
 
-    pub fn get_data_source(&self) -> DataSource {
-        self.source.lock().unwrap().clone()
+    pub fn get_source_focus(&self) -> DataSource {
+        self.source_focus.lock().unwrap().clone()
+    }
+
+    pub fn get_source_nearest(&self) -> DataSource {
+        self.source_nearest.lock().unwrap().clone()
     }
 
     pub fn get_focus(&self) -> TpvFocus {
-         self.focus.lock().unwrap().clone()
+         self.data_focus.lock().unwrap().clone()
     }
 }
 

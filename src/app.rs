@@ -128,20 +128,7 @@ impl eframe::App for TpvUiApp {
             });
         });
 
-        egui::TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| {
-            let ds = self.dc.get_data_source();
-            let mut status = String::from("focus");
-            let mut color = Color32::GREEN;
-    
-            if ds.status == DataSourceStatus::NotOk {
-                status.push_str(" ⚠ ");
-                color = Color32::RED;
-            } else {
-                status.push_str(" ☭ ");
-            }
-    
-            status.push_str(&format!("{:08}", ds.frame));
-    
+        egui::TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| {    
             ui.with_layout(
                 egui::Layout::left_to_right(egui::Align::Center), |ui| {
                     if cfg!(debug_assertions) {
@@ -152,12 +139,47 @@ impl eframe::App for TpvUiApp {
                         .on_hover_text("tpvui was compiled with debug enabled");
                         ui.add(egui::Separator::default().vertical());
                     }
+                    // focus status
+                    {
+                        let ds = self.dc.get_source_focus();
+                        let mut status = String::from("focus");
+                        let mut color = Color32::GREEN;
+                
+                        if ds.status == DataSourceStatus::NotOk {
+                            status.push_str(" ⚠ ");
+                            color = Color32::RED;
+                        } else {
+                            status.push_str(" ☭ ");
+                        }
 
-                    ui.label(
-                        egui::RichText::new(status)
-                            .color(color)
-                    );
-                    ui.add(egui::Separator::default().vertical());
+                        status.push_str(&format!("{:08}", ds.frame));
+                        ui.label(
+                            egui::RichText::new(status)
+                                .color(color)
+                        );
+                        ui.add(egui::Separator::default().vertical());
+                    }
+                    // nearest status
+                    {
+                        let ds = self.dc.get_source_nearest();
+                        let mut status = String::from("nearest");
+                        let mut color = Color32::GREEN;
+                
+                        if ds.status == DataSourceStatus::NotOk {
+                            status.push_str(" ⚠ ");
+                            color = Color32::RED;
+                        } else {
+                            status.push_str(" ☭ ");
+                        }
+
+                        status.push_str(&format!("{:08}", ds.frame));
+                        ui.label(
+                            egui::RichText::new(status)
+                                .color(color)
+                        );
+                        ui.add(egui::Separator::default().vertical());
+                    }
+
                 }
             );
         });
