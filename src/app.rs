@@ -1,14 +1,19 @@
 use core::time;
+use base::WidgetBase;
 use egui::Color32;
 
-use crate::data::{DataCollector, DataSourceStatus};
+use crate::data::{DataCollector, DataSource, DataSourceStatus};
+
+mod base;
+mod focus;
+mod nearest;
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct TpvUiApp {
-    // Example stuff:
-    // label: String,
+    widged_focus: focus::Widget,
+    widget_nearest: nearest::Widget,
 
     #[serde(skip)]
     dc: DataCollector,
@@ -17,6 +22,8 @@ pub struct TpvUiApp {
 impl Default for TpvUiApp {
     fn default() -> Self {
         Self {
+            widged_focus: focus::Widget::new(), 
+            widget_nearest: nearest::Widget::new(),   
             dc: DataCollector::new(),
         }
     }
@@ -25,15 +32,109 @@ impl Default for TpvUiApp {
 impl TpvUiApp {
     /// Called once before the first frame.
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        // This is also where you can customize the look and feel of egui using
-        // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts
+        egui_extras::install_image_loaders(&cc.egui_ctx);
 
         // Load previous app state (if any).
-        // Note that you must enable the `persistence` feature for this to work.
         if let Some(storage) = cc.storage {
             return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
         }        
         Default::default()
+    }
+    
+    fn data_source_status(&self, ui: &mut egui::Ui, ds: &DataSource, label: &str, ) {
+        let mut status = String::from(label);
+        let mut color = Color32::GREEN;
+
+        if ds.status == DataSourceStatus::NotOk {
+            status.push_str(" ⚠ ");
+            color = Color32::RED;
+        } else {
+            status.push_str(" ☭ ");
+        }
+
+        status.push_str(&format!("{:08}", ds.frame));
+
+        ui.label(
+            egui::RichText::new(status)
+                .color(color)
+        );
+
+        ui.add(egui::Separator::default().vertical());
+    }
+    
+    fn menu_panel(&mut self, ctx: &egui::Context) {
+        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
+            ui.with_layout(
+                egui::Layout::left_to_right(egui::Align::Center), |ui| {
+
+                egui::menu::bar(ui, |ui| {
+                    // NOTE: no File->Quit on web pages!
+                    let is_web = cfg!(target_arch = "wasm32");
+                    if !is_web {
+                        ui.menu_button("File", |ui| {
+                            if ui.button("Quit").clicked() {
+                                ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                            }
+                        });
+                        ui.add_space(16.0);
+                    }
+                });
+                
+                ui.with_layout(
+                    egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        egui::widgets::global_theme_preference_buttons(ui);
+                        ui.add(egui::Separator::default().vertical());
+                });
+            });
+
+        });
+    }
+
+    fn widget_panel(&mut self, ctx: &egui::Context) {
+        // egui::SidePanel::left("side_panel").frame(egui::Frame::none()).show(ctx, |ui| {
+        egui::SidePanel::left("side_panel").show(ctx, |ui| {
+            egui::ScrollArea::vertical().show(ui, |ui| {
+                ui.with_layout(egui::Layout::top_down_justified(egui::Align::LEFT), |ui| {
+                    self.widged_focus.show_label(ui);
+                    self.widget_nearest.show_label(ui);
+                });
+            });
+         });
+    }
+
+    fn status_panel(&mut self, ctx: &egui::Context) {
+        egui::TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| {    
+            ui.with_layout(
+                egui::Layout::left_to_right(egui::Align::Center), |ui| {
+                    if cfg!(debug_assertions) {
+                        ui.label(
+                            egui::RichText::new("☢ Debug build ☢")
+                                    .color(ui.visuals().warn_fg_color),
+                        )
+                        .on_hover_text("tpvui was compiled with debug enabled");
+                        ui.add(egui::Separator::default().vertical());
+                    }
+                    // focus status
+                    self.data_source_status(ui, &&self.dc.get_source_focus(), "focus");
+                    // nearest status
+                    self.data_source_status(ui, &self.dc.get_source_nearest(), "nearest");
+                }
+            );
+        });
+    }
+    
+    fn widget_windows(&mut self, ctx: &egui::Context) {
+        if self.widged_focus.is_visible() {            
+            egui::Window::new(self.widged_focus.get_title()).show(ctx, |ui| {
+                self.widged_focus.show_window(ui, self.dc.get_focus());
+            });
+        }
+        
+        if self.widget_nearest.is_visible() {            
+            egui::Window::new("Nearest").show(ctx, |ui| {
+                self.widget_nearest.show_window(ui, self.dc.get_nearest());
+            });
+        }
     }
 }
 
@@ -50,138 +151,15 @@ impl eframe::App for TpvUiApp {
         ctx.request_repaint_after(time::Duration::from_millis(250));
         ctx.set_pixels_per_point(1.0);
 
-        // Put your widgets into a `SidePanel`, `TopBottomPanel`, `CentralPanel`, `Window` or `Area`.
-        // For inspiration and more examples, go to https://emilk.github.io/egui
-
-        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-            // The top panel is often a good place for a menu bar:
-
-            egui::menu::bar(ui, |ui| {
-                // NOTE: no File->Quit on web pages!
-                let is_web = cfg!(target_arch = "wasm32");
-                if !is_web {
-                    ui.menu_button("File", |ui| {
-                        if ui.button("Quit").clicked() {
-                            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-                        }
-                    });
-                    ui.add_space(16.0);
-                }
-
-                egui::widgets::global_theme_preference_buttons(ui);
-            });
-        });
+        self.menu_panel(ctx);
+        self.widget_panel(ctx);
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            // The central panel the region left after adding TopPanel's and SidePanel's
-            let focus = self.dc.get_focus();
-
-            ui.heading(focus.name);
-            ui.separator();
-
-            egui::Grid::new("some_unique_id").show(ui, |ui| {
-                ui.label("Speed").highlight();
-                ui.label(format!("{} kph", focus.speed / 275));
-                ui.label("Distance").highlight();
-                ui.label(format!("{} km", focus.distance / 1000));
-                ui.label("Time").highlight();
-                ui.label(format!("{} s", focus.time));
-                ui.end_row();
-                ui.end_row();
-
-                ui.label("Power").highlight();
-                ui.label(format!("{} W", focus.power));
-                ui.label("Avg. Power").highlight();
-                ui.label(format!("{} W", focus.avgPower));
-                ui.label("Max. Power").highlight();
-                ui.label(format!("{} W", focus.maxPower));
-                ui.label("Nrm. Power").highlight();
-                ui.label(format!("{} W", focus.nrmPower));
-                ui.end_row();
-                ui.end_row();
-
-                ui.label("HR").highlight();
-                ui.label(format!("{} bpm", focus.heartrate));
-                ui.label("Avg. HR").highlight();
-                ui.label(format!("{} bpm", focus.avgHeartrate));
-                ui.label("Max. HR").highlight();
-                ui.label(format!("{} bpm", focus.maxHeartrate));
-                ui.end_row();
-                ui.end_row();
-
-                ui.label("Cadence").highlight();
-                ui.label(format!("{} rpm", focus.cadence));
-                ui.label("Avg. Cadence").highlight();
-                ui.label(format!("{} rpm", focus.avgCadence));
-                ui.label("Max. Cadence").highlight();
-                ui.label(format!("{} rpm", focus.maxCadence));
-                ui.end_row();
-                ui.end_row();
-
-                ui.label("Windspeed").highlight();
-                ui.label(format!("{} kph", focus.windSpeed / 100));
-                ui.label("Wind angle").highlight();
-                ui.label(format!("{} deg", focus.windAngle));
-                ui.label("Slope").highlight();
-                ui.label(format!("{} %", focus.slope));
-                ui.end_row();
-            });
+            egui::Image::new(egui::include_image!("../assets/ventoux.jpg"))
+                .paint_at(ui, ctx.used_rect())
         });
 
-        egui::TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| {    
-            ui.with_layout(
-                egui::Layout::left_to_right(egui::Align::Center), |ui| {
-                    if cfg!(debug_assertions) {
-                        ui.label(
-                            egui::RichText::new("☢ Debug build ☢")
-                                    .color(ui.visuals().warn_fg_color),
-                        )
-                        .on_hover_text("tpvui was compiled with debug enabled");
-                        ui.add(egui::Separator::default().vertical());
-                    }
-                    // focus status
-                    {
-                        let ds = self.dc.get_source_focus();
-                        let mut status = String::from("focus");
-                        let mut color = Color32::GREEN;
-                
-                        if ds.status == DataSourceStatus::NotOk {
-                            status.push_str(" ⚠ ");
-                            color = Color32::RED;
-                        } else {
-                            status.push_str(" ☭ ");
-                        }
-
-                        status.push_str(&format!("{:08}", ds.frame));
-                        ui.label(
-                            egui::RichText::new(status)
-                                .color(color)
-                        );
-                        ui.add(egui::Separator::default().vertical());
-                    }
-                    // nearest status
-                    {
-                        let ds = self.dc.get_source_nearest();
-                        let mut status = String::from("nearest");
-                        let mut color = Color32::GREEN;
-                
-                        if ds.status == DataSourceStatus::NotOk {
-                            status.push_str(" ⚠ ");
-                            color = Color32::RED;
-                        } else {
-                            status.push_str(" ☭ ");
-                        }
-
-                        status.push_str(&format!("{:08}", ds.frame));
-                        ui.label(
-                            egui::RichText::new(status)
-                                .color(color)
-                        );
-                        ui.add(egui::Separator::default().vertical());
-                    }
-
-                }
-            );
-        });
+        self.widget_windows(ctx);
+        self.status_panel(ctx);
     }
 }

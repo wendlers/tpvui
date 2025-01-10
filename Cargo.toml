@@ -19,6 +19,10 @@ eframe = { version = "0.30", default-features = false, features = [
     "persistence",   # Enable restoring app state when restarting the app.
     "wayland",       # To support Linux (and CI)
 ] }
+
+egui_extras = { version = "*", features = ["all_loaders"] }
+image = { version = "0.25", features = ["jpeg", "png"] }
+
 log = "0.4"
 
 serde = { version = "1", features = ["derive"] }

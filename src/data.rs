@@ -333,5 +333,9 @@ impl DataCollector {
     pub fn get_focus(&self) -> TpvFocus {
          self.data_focus.lock().unwrap().clone()
     }
+
+    pub fn get_nearest(&self) -> TpvNearest {
+        self.data_nearest.lock().unwrap().clone()
+    }
 }
 
