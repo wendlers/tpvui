@@ -151,8 +151,6 @@ impl DataSource {
         DataSource {
             started: false,
             status: DataSourceStatus::NotOk,
-            // uri: String::from("http://192.168.2.118:8080"),
-            // uri: String::from("http://localhost:8080"),
             frame: 0,
         }
     }
@@ -198,41 +196,12 @@ impl DataCollector {
                 let body_clone = Arc::clone(&body);
                 let request = ehttp::Request::get("http://localhost:8080/bcast/focus");
 
-                ehttp::fetch(request, move |result: ehttp::Result<ehttp::Response>| {
-                    match result {
-                        Ok(r) => (|response: &ehttp::Response| {
-                            let mut status_locked = status_clone.lock().unwrap();
-                            *status_locked = response.status;
-                            match response.text() {
-                                Some(s) => (|body: &str|{
-                                    let mut body_locked = body_clone.lock().unwrap();
-                                    *body_locked = String::from(body);
-                                })(s),
-                                None => (),
-                            }
-
-                        })(&r),
-                        Err(_) => (|| {
-                            let mut status_locked = status_clone.lock().unwrap();
-                            *status_locked = 0;
-                        })(),
-                    }
-                });
-
-                let last_status: u16;
-                let last_body: String;
-                {
-                    last_status = *status.lock().unwrap();
-                    last_body = body.lock().unwrap().clone();
-                }
+                let (last_status, last_body) = get_data_http(&status, &body, status_clone, body_clone, request);
 
                 if last_status != 200 {
                     log::warn!("Failed to retrive 'focus' data");
                     // failed to get the data
-                    {
-                        let mut source_locked = source.lock().unwrap();
-                        source_locked.status = DataSourceStatus::NotOk;
-                    }
+                    update_source(&source, DataSourceStatus::NotOk);
                     thread::sleep(time::Duration::from_millis(1000));
                 } else {
                     let mut focus_list: Vec<TpvFocus> = Vec::new();
@@ -245,11 +214,8 @@ impl DataCollector {
                     log::info!("'focus' json:\n{focus_list:#?}");
 
                     // all good, we got some data
+                    update_source(&source, DataSourceStatus::Ok);
                     {
-                        let mut source_locked = source.lock().unwrap();
-                        source_locked.status = DataSourceStatus::Ok;
-                        source_locked.frame += 1;
-
                         let mut focus_locked = focus.lock().unwrap();
 
                         match focus_list.get(0) {
@@ -278,41 +244,12 @@ impl DataCollector {
                 let body_clone = Arc::clone(&body);
                 let request = ehttp::Request::get("http://localhost:8080/bcast/nearest");
 
-                ehttp::fetch(request, move |result: ehttp::Result<ehttp::Response>| {
-                    match result {
-                        Ok(r) => (|response: &ehttp::Response| {
-                            let mut status_locked = status_clone.lock().unwrap();
-                            *status_locked = response.status;
-                            match response.text() {
-                                Some(s) => (|body: &str|{
-                                    let mut body_locked = body_clone.lock().unwrap();
-                                    *body_locked = String::from(body);
-                                })(s),
-                                None => (),
-                            }
-
-                        })(&r),
-                        Err(_) => (|| {
-                            let mut status_locked = status_clone.lock().unwrap();
-                            *status_locked = 0;
-                        })(),
-                    }
-                });
-
-                let last_status: u16;
-                let last_body: String;
-                {
-                    last_status = *status.lock().unwrap();
-                    last_body = body.lock().unwrap().clone();
-                }
+                let (last_status, last_body) = get_data_http(&status, &body, status_clone, body_clone, request);
 
                 if last_status != 200 {
                     log::warn!("Failed to retrive 'nearest' data");
                     // failed to get the data
-                    {
-                        let mut source_locked = source.lock().unwrap();
-                        source_locked.status = DataSourceStatus::NotOk;
-                    }
+                    update_source(&source, DataSourceStatus::NotOk);
                     thread::sleep(time::Duration::from_millis(1000));
                 } else {
                     let mut nearest_list: Vec<TpvNearest> = Vec::new();
@@ -325,11 +262,8 @@ impl DataCollector {
                     log::info!("'nearest' json:\n{nearest_list:#?}");
 
                     // all good, we got some data
+                    update_source(&source, DataSourceStatus::Ok);
                     {
-                        let mut source_locked = source.lock().unwrap();
-                        source_locked.status = DataSourceStatus::Ok;
-                        source_locked.frame += 1;
-
                         let mut nearest_locked = focus.lock().unwrap();
                         *nearest_locked = nearest_list;
                     }
@@ -354,48 +288,18 @@ impl DataCollector {
                 let body_clone = Arc::clone(&body);
                 let request = ehttp::Request::get("http://localhost:8080/bcast/event");
 
-                ehttp::fetch(request, move |result: ehttp::Result<ehttp::Response>| {
-                    match result {
-                        Ok(r) => (|response: &ehttp::Response| {
-                            let mut status_locked = status_clone.lock().unwrap();
-                            *status_locked = response.status;
-                            match response.text() {
-                                Some(s) => (|body: &str|{
-                                    let mut body_locked = body_clone.lock().unwrap();
-                                    *body_locked = String::from(body);
-                                })(s),
-                                None => (),
-                            }
-
-                        })(&r),
-                        Err(_) => (|| {
-                            let mut status_locked = status_clone.lock().unwrap();
-                            *status_locked = 0;
-                        })(),
-                    }
-                });
-
-                let last_status: u16;
-                let tmp_body: String;
-                {
-                    last_status = *status.lock().unwrap();
-                    tmp_body = body.lock().unwrap().clone();
-                }
-
-                // 'type' is a reserved RUST keyword. Thus we can not have a field named 'type'
-                // in the struct for the 'serde' bindings. So what we do here is to change
-                // 'type' to 'type_' in the received body:
-                let last_body = tmp_body.replace("\"type\":", "\"type_\":");
+                let (last_status, last_body) = get_data_http(&status, &body, status_clone, body_clone, request);
 
                 if last_status != 200 {
-                    log::warn!("Failed to retrive 'event' data");
                     // failed to get the data
-                    {
-                        let mut source_locked = source.lock().unwrap();
-                        source_locked.status = DataSourceStatus::NotOk;
-                    }
+                    log::warn!("Failed to retrive 'event' data");
+                    update_source(&source, DataSourceStatus::NotOk);
                     thread::sleep(time::Duration::from_millis(1000));
                 } else {
+                    // 'type' is a reserved RUST keyword. Thus we can not have a field named 'type'
+                    // in the struct for the 'serde' bindings. So what we do here is to change
+                    // 'type' to 'type_' in the received body:
+                    let last_body = last_body.replace("\"type\":", "\"type_\":");
                     let mut event_list: Vec<TpvEvent> = Vec::new();
 
                     match serde_json::from_str(&last_body.as_str()) {
@@ -406,11 +310,8 @@ impl DataCollector {
                     log::info!("'event' json:\n{event_list:#?}");
 
                     // all good, we got some data
+                    update_source(&source, DataSourceStatus::Ok);
                     {
-                        let mut source_locked = source.lock().unwrap();
-                        source_locked.status = DataSourceStatus::Ok;
-                        source_locked.frame += 1;
-
                         let mut event_locked = event.lock().unwrap();
 
                         match event_list.get(0) {
@@ -459,5 +360,46 @@ impl DataCollector {
     pub fn get_event(&self) -> TpvEvent {
         self.data_event.lock().unwrap().clone()
     }
+}
+
+fn update_source(source: &Arc<Mutex<DataSource>>, s: DataSourceStatus) {
+    let mut source_locked = source.lock().unwrap();
+   
+    if s == DataSourceStatus::Ok {
+        source_locked.frame += 1;
+    }
+   
+    source_locked.status = s;
+}
+
+fn get_data_http(status: &Arc<Mutex<u16>>, body: &Arc<Mutex<String>>, status_clone: Arc<Mutex<u16>>, body_clone: Arc<Mutex<String>>, request: ehttp::Request) -> (u16, String) {
+    ehttp::fetch(request, move |result: ehttp::Result<ehttp::Response>| {
+        match result {
+            Ok(r) => (|response: &ehttp::Response| {
+                let mut status_locked = status_clone.lock().unwrap();
+                *status_locked = response.status;
+                match response.text() {
+                    Some(s) => (|body: &str|{
+                        let mut body_locked = body_clone.lock().unwrap();
+                        *body_locked = String::from(body);
+                    })(s),
+                    None => (),
+                }
+
+            })(&r),
+            Err(_) => (|| {
+                let mut status_locked = status_clone.lock().unwrap();
+                *status_locked = 0;
+            })(),
+        }
+    });
+
+    let last_status: u16;
+    let last_body: String;
+    {
+        last_status = *status.lock().unwrap();
+        last_body = body.lock().unwrap().clone();
+    }
+    (last_status, last_body)
 }
 
