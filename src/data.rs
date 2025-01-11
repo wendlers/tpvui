@@ -78,18 +78,19 @@ impl TpvFocus {
 #[derive(Debug, Deserialize, Clone)]
 #[allow(dead_code, non_snake_case)]
 pub struct TpvNearest {
-    name: String,
-    country: String,
-    team: String,
-    teamCode: String,
-    speed: u32,
-    timeGap: i32,
-    position: u32,
-    distance: u32,
-    isEliminated: bool,    
+    pub name: String,
+    pub country: String,
+    pub team: String,
+    pub teamCode: String,
+    pub speed: u32,
+    pub timeGap: i32,
+    pub position: u32,
+    pub distance: u32,
+    pub isEliminated: bool,    
 }
 
 impl TpvNearest {
+    #[allow(dead_code)]
     fn new() -> TpvNearest {
         TpvNearest {
             name: String::from("--"),
@@ -105,6 +106,33 @@ impl TpvNearest {
     }    
 }
 
+#[derive(Debug, Deserialize, Clone)]
+#[allow(dead_code, non_snake_case)]
+pub struct TpvEvent{
+    pub name: String,
+    pub route: String,
+    pub laps: u32,
+    pub distance: u32,
+    pub height: u32,
+    pub locations: u32,
+    pub type_: String, 
+}
+
+impl TpvEvent {
+    #[allow(dead_code)]
+    fn new() -> TpvEvent {
+        TpvEvent {
+            name: String::from("--"),
+            route: String::from("--"),
+            laps: 0,
+            distance: 0,
+            height: 0,
+            locations: 0,
+            type_: String::from("--"), 
+        }
+    }    
+}
+
 #[derive(Clone, PartialEq)]
 pub enum DataSourceStatus {
     Ok,
@@ -115,7 +143,6 @@ pub enum DataSourceStatus {
 pub struct DataSource {
     pub started: bool,
     pub status: DataSourceStatus,
-    // pub uri: String,
     pub frame: u64,
 }
 
@@ -138,7 +165,10 @@ pub struct DataCollector {
     data_focus: Arc<Mutex<TpvFocus>>,
     // TPV raw 'nearest' data
     source_nearest: Arc<Mutex<DataSource>>, 
-    data_nearest: Arc<Mutex<TpvNearest>>,
+    data_nearest: Arc<Mutex<Vec<TpvNearest>>>,
+    // TPV raw 'event' data
+    source_event: Arc<Mutex<DataSource>>,
+    data_event: Arc<Mutex<TpvEvent>>,
 }
 
 impl DataCollector {
@@ -147,7 +177,9 @@ impl DataCollector {
             source_focus:  Arc::new(Mutex::new(DataSource::new())),
             data_focus:  Arc::new(Mutex::new(TpvFocus::new())),
             source_nearest:  Arc::new(Mutex::new(DataSource::new())),
-            data_nearest:  Arc::new(Mutex::new(TpvNearest::new())),
+            data_nearest:  Arc::new(Mutex::new(Vec::new())),
+            source_event:  Arc::new(Mutex::new(DataSource::new())),
+            data_event: Arc::new(Mutex::new(TpvEvent::new())),
         }
     }
 
@@ -299,13 +331,94 @@ impl DataCollector {
                         source_locked.frame += 1;
 
                         let mut nearest_locked = focus.lock().unwrap();
+                        *nearest_locked = nearest_list;
+                    }
+                    thread::sleep(time::Duration::from_millis(250));
+                }           
+            }
+        });
+    }
 
-                        match nearest_list.get(0) {
-                            Some(f) => *nearest_locked = f.clone(),
+    fn collect_event(&self) {
+        let source = Arc::clone(&self.source_event);
+        let event = Arc::clone(&self.data_event);
+
+        thread::spawn(move || {
+            log::info!("DataCollector thread for 'event' started");
+
+            let status:Arc<Mutex<u16>>  = Arc::new(Mutex::new(0));
+            let body:Arc<Mutex<String>>  = Arc::new(Mutex::new(String::new()));
+
+            loop {
+                let status_clone = Arc::clone(&status);
+                let body_clone = Arc::clone(&body);
+                let request = ehttp::Request::get("http://localhost:8080/bcast/event");
+
+                ehttp::fetch(request, move |result: ehttp::Result<ehttp::Response>| {
+                    match result {
+                        Ok(r) => (|response: &ehttp::Response| {
+                            let mut status_locked = status_clone.lock().unwrap();
+                            *status_locked = response.status;
+                            match response.text() {
+                                Some(s) => (|body: &str|{
+                                    let mut body_locked = body_clone.lock().unwrap();
+                                    *body_locked = String::from(body);
+                                })(s),
+                                None => (),
+                            }
+
+                        })(&r),
+                        Err(_) => (|| {
+                            let mut status_locked = status_clone.lock().unwrap();
+                            *status_locked = 0;
+                        })(),
+                    }
+                });
+
+                let last_status: u16;
+                let tmp_body: String;
+                {
+                    last_status = *status.lock().unwrap();
+                    tmp_body = body.lock().unwrap().clone();
+                }
+
+                // 'type' is a reserved RUST keyword. Thus we can not have a field named 'type'
+                // in the struct for the 'serde' bindings. So what we do here is to change
+                // 'type' to 'type_' in the received body:
+                let last_body = tmp_body.replace("\"type\":", "\"type_\":");
+
+                if last_status != 200 {
+                    log::warn!("Failed to retrive 'event' data");
+                    // failed to get the data
+                    {
+                        let mut source_locked = source.lock().unwrap();
+                        source_locked.status = DataSourceStatus::NotOk;
+                    }
+                    thread::sleep(time::Duration::from_millis(1000));
+                } else {
+                    let mut event_list: Vec<TpvEvent> = Vec::new();
+
+                    match serde_json::from_str(&last_body.as_str()) {
+                        Ok(obj) => event_list = obj,
+                        Err(_) => () 
+                    }
+                    
+                    log::info!("'event' json:\n{event_list:#?}");
+
+                    // all good, we got some data
+                    {
+                        let mut source_locked = source.lock().unwrap();
+                        source_locked.status = DataSourceStatus::Ok;
+                        source_locked.frame += 1;
+
+                        let mut event_locked = event.lock().unwrap();
+
+                        match event_list.get(0) {
+                            Some(f) => *event_locked = f.clone(),
                             None => (), // empty json array -> ignore
                         }
                     }
-                    thread::sleep(time::Duration::from_millis(250));
+                    thread::sleep(time::Duration::from_millis(5000));
                 }           
             }
         });
@@ -319,6 +432,7 @@ impl DataCollector {
 
             self.collect_focus();
             self.collect_nearest();
+            self.collect_event();
         }
     }
 
@@ -330,12 +444,20 @@ impl DataCollector {
         self.source_nearest.lock().unwrap().clone()
     }
 
+    pub fn get_source_event(&self) -> DataSource {
+        self.source_event.lock().unwrap().clone()
+    }
+
     pub fn get_focus(&self) -> TpvFocus {
          self.data_focus.lock().unwrap().clone()
     }
 
-    pub fn get_nearest(&self) -> TpvNearest {
+    pub fn get_nearest(&self) -> Vec<TpvNearest> {
         self.data_nearest.lock().unwrap().clone()
+    }
+
+    pub fn get_event(&self) -> TpvEvent {
+        self.data_event.lock().unwrap().clone()
     }
 }
 

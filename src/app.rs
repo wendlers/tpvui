@@ -7,6 +7,7 @@ use crate::data::{DataCollector, DataSource, DataSourceStatus};
 mod base;
 mod focus;
 mod nearest;
+mod event;
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -14,6 +15,7 @@ mod nearest;
 pub struct TpvUiApp {
     widged_focus: focus::Widget,
     widget_nearest: nearest::Widget,
+    widget_event: event::Widget,
 
     #[serde(skip)]
     dc: DataCollector,
@@ -24,6 +26,7 @@ impl Default for TpvUiApp {
         Self {
             widged_focus: focus::Widget::new(), 
             widget_nearest: nearest::Widget::new(),   
+            widget_event: event::Widget::new(),
             dc: DataCollector::new(),
         }
     }
@@ -92,11 +95,12 @@ impl TpvUiApp {
 
     fn widget_panel(&mut self, ctx: &egui::Context) {
         // egui::SidePanel::left("side_panel").frame(egui::Frame::none()).show(ctx, |ui| {
-        egui::SidePanel::left("side_panel").show(ctx, |ui| {
+        egui::SidePanel::left("widget_panel").show(ctx, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
                 ui.with_layout(egui::Layout::top_down_justified(egui::Align::LEFT), |ui| {
                     self.widged_focus.show_label(ui);
                     self.widget_nearest.show_label(ui);
+                    self.widget_event.show_label(ui);
                 });
             });
          });
@@ -114,10 +118,9 @@ impl TpvUiApp {
                         .on_hover_text("tpvui was compiled with debug enabled");
                         ui.add(egui::Separator::default().vertical());
                     }
-                    // focus status
                     self.data_source_status(ui, &&self.dc.get_source_focus(), "focus");
-                    // nearest status
                     self.data_source_status(ui, &self.dc.get_source_nearest(), "nearest");
+                    self.data_source_status(ui, &&self.dc.get_source_event(), "event");
                 }
             );
         });
@@ -131,8 +134,14 @@ impl TpvUiApp {
         }
         
         if self.widget_nearest.is_visible() {            
-            egui::Window::new("Nearest").show(ctx, |ui| {
+            egui::Window::new(self.widget_nearest.get_title()).show(ctx, |ui| {
                 self.widget_nearest.show_window(ui, self.dc.get_nearest());
+            });
+        }
+
+        if self.widget_event.is_visible() {            
+            egui::Window::new(self.widget_event.get_title()).show(ctx, |ui| {
+                self.widget_event.show_window(ui, self.dc.get_event());
             });
         }
     }
@@ -148,7 +157,7 @@ impl eframe::App for TpvUiApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.dc.start();
 
-        ctx.request_repaint_after(time::Duration::from_millis(250));
+        ctx.request_repaint_after(time::Duration::from_millis(500));
         ctx.set_pixels_per_point(1.0);
 
         self.menu_panel(ctx);
