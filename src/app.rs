@@ -8,6 +8,9 @@ mod base;
 mod focus;
 mod nearest;
 mod event;
+mod entries;
+
+pub const APP_KEY: &str = "tpvui";
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -16,6 +19,7 @@ pub struct TpvUiApp {
     widged_focus: focus::Widget,
     widget_nearest: nearest::Widget,
     widget_event: event::Widget,
+    widget_entries: entries::Widget,
 
     #[serde(skip)]
     dc: DataCollector,
@@ -27,6 +31,7 @@ impl Default for TpvUiApp {
             widged_focus: focus::Widget::new(), 
             widget_nearest: nearest::Widget::new(),   
             widget_event: event::Widget::new(),
+            widget_entries: entries::Widget::new(),
             dc: DataCollector::new(),
         }
     }
@@ -39,7 +44,7 @@ impl TpvUiApp {
 
         // Load previous app state (if any).
         if let Some(storage) = cc.storage {
-            return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
+            return eframe::get_value(storage, APP_KEY).unwrap_or_default();
         }        
         Default::default()
     }
@@ -101,6 +106,7 @@ impl TpvUiApp {
                     self.widged_focus.show_label(ui);
                     self.widget_nearest.show_label(ui);
                     self.widget_event.show_label(ui);
+                    self.widget_entries.show_label(ui);
                 });
             });
          });
@@ -121,6 +127,7 @@ impl TpvUiApp {
                     self.data_source_status(ui, &&self.dc.get_source_focus(), "focus");
                     self.data_source_status(ui, &self.dc.get_source_nearest(), "nearest");
                     self.data_source_status(ui, &&self.dc.get_source_event(), "event");
+                    self.data_source_status(ui, &&&self.dc.get_source_entries(), "entries");
                 }
             );
         });
@@ -128,13 +135,15 @@ impl TpvUiApp {
     
     fn widget_windows(&mut self, ctx: &egui::Context) {
         if self.widged_focus.is_visible() {            
-            egui::Window::new(self.widged_focus.get_title()).show(ctx, |ui| {
+            egui::Window::new(self.widged_focus.get_title())
+                .min_width(2500.0).show(ctx, |ui| {
                 self.widged_focus.show_window(ui, self.dc.get_focus());
             });
         }
         
         if self.widget_nearest.is_visible() {            
-            egui::Window::new(self.widget_nearest.get_title()).show(ctx, |ui| {
+            egui::Window::new(self.widget_nearest.get_title())
+                .min_width(1200.0).show(ctx, |ui| {
                 self.widget_nearest.show_window(ui, self.dc.get_nearest());
             });
         }
@@ -144,13 +153,19 @@ impl TpvUiApp {
                 self.widget_event.show_window(ui, self.dc.get_event());
             });
         }
+
+        if self.widget_entries.is_visible() {            
+            egui::Window::new(self.widget_entries.get_title()).show(ctx, |ui| {
+                self.widget_entries.show_window(ui, self.dc.get_entries());
+            });
+        }
     }
 }
 
 impl eframe::App for TpvUiApp {
     /// Called by the frame work to save state before shutdown.
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
-        eframe::set_value(storage, eframe::APP_KEY, self);
+        eframe::set_value(storage, APP_KEY, self);
     }
 
     /// Called each time the UI needs repainting, which may be many times per second.

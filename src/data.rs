@@ -133,6 +133,29 @@ impl TpvEvent {
     }    
 }
 
+#[derive(Debug, Deserialize, Clone)]
+#[allow(dead_code, non_snake_case)]
+pub struct TpvEntries {
+    pub bibNum: u32,
+    pub name: String,
+    pub country: String,
+    pub team: String,
+    pub teamCode: String,    
+}
+
+impl TpvEntries {
+    #[allow(dead_code)]
+    fn new() -> TpvEntries {
+        TpvEntries {
+            bibNum: 0,
+            name: String::from("--"),
+            country: String::from("--"),
+            team: String::from("--"),
+            teamCode: String::from("--"),  
+        }
+    }    
+}
+
 #[derive(Clone, PartialEq)]
 pub enum DataSourceStatus {
     Ok,
@@ -158,6 +181,7 @@ impl DataSource {
 
 #[derive(Clone)]
 pub struct DataCollector {
+    base_uri: String,
     // TPV raw 'focus' data
     source_focus: Arc<Mutex<DataSource>>, 
     data_focus: Arc<Mutex<TpvFocus>>,
@@ -167,23 +191,31 @@ pub struct DataCollector {
     // TPV raw 'event' data
     source_event: Arc<Mutex<DataSource>>,
     data_event: Arc<Mutex<TpvEvent>>,
+    // TPV raw 'entries' data
+    source_entries: Arc<Mutex<DataSource>>,
+    data_entries: Arc<Mutex<Vec<TpvEntries>>>,
 }
 
 impl DataCollector {
     pub fn new() -> DataCollector {
         DataCollector {
+            // base_uri: String::from("http://localhost:8080"),
+            base_uri: String::from("http://192.168.2.118:8080"),
             source_focus:  Arc::new(Mutex::new(DataSource::new())),
             data_focus:  Arc::new(Mutex::new(TpvFocus::new())),
             source_nearest:  Arc::new(Mutex::new(DataSource::new())),
             data_nearest:  Arc::new(Mutex::new(Vec::new())),
             source_event:  Arc::new(Mutex::new(DataSource::new())),
             data_event: Arc::new(Mutex::new(TpvEvent::new())),
+            source_entries:  Arc::new(Mutex::new(DataSource::new())),
+            data_entries: Arc::new(Mutex::new(Vec::new())),
         }
     }
 
     fn collect_focus(&self) {
         let source = Arc::clone(&self.source_focus);
         let focus = Arc::clone(&self.data_focus);
+        let url = format!("{}/{}", self.base_uri, "bcast/focus");
 
         thread::spawn(move || {
             log::info!("DataCollector thread for 'focus' started");
@@ -192,11 +224,7 @@ impl DataCollector {
             let body:Arc<Mutex<String>>  = Arc::new(Mutex::new(String::new()));
 
             loop {
-                let status_clone = Arc::clone(&status);
-                let body_clone = Arc::clone(&body);
-                let request = ehttp::Request::get("http://localhost:8080/bcast/focus");
-
-                let (last_status, last_body) = get_data_http(&status, &body, status_clone, body_clone, request);
+                let (last_status, last_body) = get_data_http(&status, &body, url.as_str());
 
                 if last_status != 200 {
                     log::warn!("Failed to retrive 'focus' data");
@@ -232,6 +260,7 @@ impl DataCollector {
     fn collect_nearest(&self) {
         let source = Arc::clone(&self.source_nearest);
         let focus = Arc::clone(&self.data_nearest);
+        let url = format!("{}/{}", self.base_uri, "bcast/nearest");
 
         thread::spawn(move || {
             log::info!("DataCollector thread for 'nearest' started");
@@ -240,11 +269,7 @@ impl DataCollector {
             let body:Arc<Mutex<String>>  = Arc::new(Mutex::new(String::new()));
 
             loop {
-                let status_clone = Arc::clone(&status);
-                let body_clone = Arc::clone(&body);
-                let request = ehttp::Request::get("http://localhost:8080/bcast/nearest");
-
-                let (last_status, last_body) = get_data_http(&status, &body, status_clone, body_clone, request);
+                let (last_status, last_body) = get_data_http(&status, &body, url.as_str());
 
                 if last_status != 200 {
                     log::warn!("Failed to retrive 'nearest' data");
@@ -276,6 +301,7 @@ impl DataCollector {
     fn collect_event(&self) {
         let source = Arc::clone(&self.source_event);
         let event = Arc::clone(&self.data_event);
+        let url = format!("{}/{}", self.base_uri, "bcast/event");
 
         thread::spawn(move || {
             log::info!("DataCollector thread for 'event' started");
@@ -284,11 +310,7 @@ impl DataCollector {
             let body:Arc<Mutex<String>>  = Arc::new(Mutex::new(String::new()));
 
             loop {
-                let status_clone = Arc::clone(&status);
-                let body_clone = Arc::clone(&body);
-                let request = ehttp::Request::get("http://localhost:8080/bcast/event");
-
-                let (last_status, last_body) = get_data_http(&status, &body, status_clone, body_clone, request);
+                let (last_status, last_body) = get_data_http(&status, &body, url.as_str());
 
                 if last_status != 200 {
                     // failed to get the data
@@ -325,6 +347,47 @@ impl DataCollector {
         });
     }
 
+    fn collect_entries(&self) {
+        let source = Arc::clone(&self.source_entries);
+        let focus = Arc::clone(&self.data_entries);
+        let url = format!("{}/{}", self.base_uri, "bcast/entries");
+
+        thread::spawn(move || {
+            log::info!("DataCollector thread for 'entries' started");
+
+            let status:Arc<Mutex<u16>>  = Arc::new(Mutex::new(0));
+            let body:Arc<Mutex<String>>  = Arc::new(Mutex::new(String::new()));
+
+            loop {             
+                let (last_status, last_body) = get_data_http(&status, &body, url.as_str());
+
+                if last_status != 200 {
+                    log::warn!("Failed to retrive 'entries' data");
+                    // failed to get the data
+                    update_source(&source, DataSourceStatus::NotOk);
+                    thread::sleep(time::Duration::from_millis(1000));
+                } else {
+                    let mut entries_list: Vec<TpvEntries> = Vec::new();
+
+                    match serde_json::from_str(&last_body.as_str()) {
+                        Ok(obj) => entries_list = obj,
+                        Err(_) => () 
+                    }
+                    
+                    log::info!("'entries' json:\n{entries_list:#?}");
+
+                    // all good, we got some data
+                    update_source(&source, DataSourceStatus::Ok);
+                    {
+                        let mut entries_locked = focus.lock().unwrap();
+                        *entries_locked = entries_list;
+                    }
+                    thread::sleep(time::Duration::from_millis(5000));
+                }           
+            }
+        });
+    }
+
     pub fn start(&mut self) {
         let mut s = self.source_focus.lock().unwrap();
         if !s.started  {
@@ -334,6 +397,7 @@ impl DataCollector {
             self.collect_focus();
             self.collect_nearest();
             self.collect_event();
+            self.collect_entries();
         }
     }
 
@@ -349,6 +413,10 @@ impl DataCollector {
         self.source_event.lock().unwrap().clone()
     }
 
+    pub fn get_source_entries(&self) -> DataSource {
+        self.source_entries.lock().unwrap().clone()
+    }
+
     pub fn get_focus(&self) -> TpvFocus {
          self.data_focus.lock().unwrap().clone()
     }
@@ -359,6 +427,10 @@ impl DataCollector {
 
     pub fn get_event(&self) -> TpvEvent {
         self.data_event.lock().unwrap().clone()
+    }
+
+    pub fn get_entries(&self) -> Vec<TpvEntries> {
+        self.data_entries.lock().unwrap().clone()
     }
 }
 
@@ -372,34 +444,37 @@ fn update_source(source: &Arc<Mutex<DataSource>>, s: DataSourceStatus) {
     source_locked.status = s;
 }
 
-fn get_data_http(status: &Arc<Mutex<u16>>, body: &Arc<Mutex<String>>, status_clone: Arc<Mutex<u16>>, body_clone: Arc<Mutex<String>>, request: ehttp::Request) -> (u16, String) {
+fn get_data_http(status: &Arc<Mutex<u16>>, body: &Arc<Mutex<String>>, url: &str) -> (u16, String) {
+    let status_clone = Arc::clone(&status);
+    let body_clone = Arc::clone(&body);
+    let request = ehttp::Request::get(url);
+ 
+
     ehttp::fetch(request, move |result: ehttp::Result<ehttp::Response>| {
+        let mut status_locked = status_clone.lock().unwrap();
+        let mut body_locked = body_clone.lock().unwrap();
+
         match result {
-            Ok(r) => (|response: &ehttp::Response| {
-                let mut status_locked = status_clone.lock().unwrap();
+            Ok(r) => (move |response: &ehttp::Response| {
                 *status_locked = response.status;
                 match response.text() {
-                    Some(s) => (|body: &str|{
-                        let mut body_locked = body_clone.lock().unwrap();
+                    Some(s) => (move |body: &str|{
                         *body_locked = String::from(body);
+                        // log::info!("{}", *body_locked);
                     })(s),
                     None => (),
                 }
 
             })(&r),
-            Err(_) => (|| {
-                let mut status_locked = status_clone.lock().unwrap();
+            Err(_) => (move || {
                 *status_locked = 0;
             })(),
         }
     });
 
-    let last_status: u16;
-    let last_body: String;
-    {
-        last_status = *status.lock().unwrap();
-        last_body = body.lock().unwrap().clone();
-    }
+    let last_status: u16 = *status.lock().unwrap();
+    let last_body: String = body.lock().unwrap().clone();
+
     (last_status, last_body)
 }
 

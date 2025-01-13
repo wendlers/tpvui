@@ -68,7 +68,7 @@ impl Widget {
                     self.key_value_simple(ui, "Slope", format!("{}", focus.slope), "%");
                     ui.end_row();
 
-                    self.key_value_simple(ui, "Calories", format!("{}", focus.calories), "kj");
+                    self.key_value_simple(ui, "Calories", format!("{}", focus.calories), "kcal");
                     self.key_value_simple(ui, "TSS", format!("{}", focus.tss), "");
                     ui.end_row();
 
