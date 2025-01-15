@@ -156,6 +156,95 @@ impl TpvEntries {
     }    
 }
 
+#[derive(Debug, Deserialize, Clone)]
+#[allow(dead_code, non_snake_case)]
+pub struct TpvGroups {
+    pub groupNum1: u32,
+    pub groupNum2: u32,
+    pub leader: String,
+    pub size: u32,
+    pub timeGap1: i32,
+    pub timeGap2: i32,
+    pub isPeloton: bool,
+}
+
+impl TpvGroups {
+    #[allow(dead_code)]
+    fn new() -> TpvGroups {
+        TpvGroups {
+            groupNum1: 0,
+            groupNum2: 0,
+            leader: String::from("--"),
+            size: 0,
+            timeGap1: 0,
+            timeGap2: 0,
+            isPeloton: false,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[allow(dead_code, non_snake_case)]
+pub struct TpvResultsIndv {
+    pub location: u32,
+    pub position: u32,
+    pub name: String,
+    pub country: String,
+    pub team: String,
+    pub teamCode: String,
+    pub points: u32,
+    pub pointsTotal: u32,
+    pub time: u32,
+    pub deltaTime: i32,
+    pub isEliminated: bool,
+}
+
+impl TpvResultsIndv {
+    #[allow(dead_code)]
+    fn new() -> TpvResultsIndv {
+        TpvResultsIndv {
+            location: 0,
+            position: 0,
+            name: String::from("--"),
+            country: String::from("--"),
+            team: String::from("--"),
+            teamCode: String::from("--"),
+            points: 0,
+            pointsTotal: 0,
+            time: 0,
+            deltaTime: 0,
+            isEliminated: false,        
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[allow(dead_code, non_snake_case)]
+pub struct TpvResultsTeam {
+    pub location: u32,
+    pub position: u32,
+    pub team: String,
+    pub teamCode: String,
+    pub pointsTotal: u32,
+    pub time: f32,
+    pub deltaTime: f32,
+}
+
+impl TpvResultsTeam {
+    #[allow(dead_code)]
+    fn new() -> TpvResultsTeam {
+        TpvResultsTeam {
+            location: 0,
+            position: 0,
+            team: String::from("--"),
+            teamCode: String::from("--"),
+            pointsTotal: 0,
+            time: 0.0,
+            deltaTime: 0.0,
+        }
+    }
+}
+
 #[derive(Clone, PartialEq)]
 pub enum DataSourceStatus {
     Ok,
@@ -194,6 +283,15 @@ pub struct DataCollector {
     // TPV raw 'entries' data
     source_entries: Arc<Mutex<DataSource>>,
     data_entries: Arc<Mutex<Vec<TpvEntries>>>,
+    // TPV  raw 'groups' data
+    source_groups: Arc<Mutex<DataSource>>,
+    data_groups: Arc<Mutex<Vec<TpvGroups>>>,
+    // TPV  raw 'resultsIndv' data
+    source_results_indv: Arc<Mutex<DataSource>>,
+    data_results_indv: Arc<Mutex<Vec<TpvResultsIndv>>>,
+    // TPV  raw 'resultsTeam' data
+    source_results_team: Arc<Mutex<DataSource>>,
+    data_results_team: Arc<Mutex<Vec<TpvResultsTeam>>>,
 }
 
 impl DataCollector {
@@ -209,6 +307,12 @@ impl DataCollector {
             data_event: Arc::new(Mutex::new(TpvEvent::new())),
             source_entries:  Arc::new(Mutex::new(DataSource::new())),
             data_entries: Arc::new(Mutex::new(Vec::new())),
+            source_groups:  Arc::new(Mutex::new(DataSource::new())),
+            data_groups: Arc::new(Mutex::new(Vec::new())),
+            source_results_indv:  Arc::new(Mutex::new(DataSource::new())),
+            data_results_indv: Arc::new(Mutex::new(Vec::new())),
+            source_results_team:  Arc::new(Mutex::new(DataSource::new())),
+            data_results_team: Arc::new(Mutex::new(Vec::new())),
         }
     }
 
@@ -388,6 +492,130 @@ impl DataCollector {
         });
     }
 
+    fn collect_groups(&self) {
+        let source = Arc::clone(&self.source_groups);
+        let focus = Arc::clone(&self.data_groups);
+        let url = format!("{}/{}", self.base_uri, "bcast/groups");
+
+        thread::spawn(move || {
+            log::info!("DataCollector thread for 'groups' started");
+
+            let status:Arc<Mutex<u16>>  = Arc::new(Mutex::new(0));
+            let body:Arc<Mutex<String>>  = Arc::new(Mutex::new(String::new()));
+
+            loop {             
+                let (last_status, last_body) = get_data_http(&status, &body, url.as_str());
+
+                if last_status != 200 {
+                    log::warn!("Failed to retrive 'groups' data");
+                    // failed to get the data
+                    update_source(&source, DataSourceStatus::NotOk);
+                    thread::sleep(time::Duration::from_millis(1000));
+                } else {
+                    let last_body = last_body.replace(": null,", ": \"\",");
+                    let mut groups_list: Vec<TpvGroups> = Vec::new();
+
+                    match serde_json::from_str(&last_body.as_str()) {
+                        Ok(obj) => groups_list = obj,
+                        Err(_) => () 
+                    }
+                    
+                    log::info!("'groups' json:\n{groups_list:#?}");
+
+                    // all good, we got some data
+                    update_source(&source, DataSourceStatus::Ok);
+                    {
+                        let mut groups_locked = focus.lock().unwrap();
+                        *groups_locked = groups_list;
+                    }
+                    thread::sleep(time::Duration::from_millis(5000));
+                }           
+            }
+        });
+    }
+
+    fn collect_results_indv(&self) {
+        let source = Arc::clone(&self.source_results_indv);
+        let focus = Arc::clone(&self.data_results_indv);
+        let url = format!("{}/{}", self.base_uri, "bcast/resultsIndv");
+
+        thread::spawn(move || {
+            log::info!("DataCollector thread for 'results_indv' started");
+
+            let status:Arc<Mutex<u16>>  = Arc::new(Mutex::new(0));
+            let body:Arc<Mutex<String>>  = Arc::new(Mutex::new(String::new()));
+
+            loop {             
+                let (last_status, last_body) = get_data_http(&status, &body, url.as_str());
+
+                if last_status != 200 {
+                    log::warn!("Failed to retrive 'results_indv' data");
+                    // failed to get the data
+                    update_source(&source, DataSourceStatus::NotOk);
+                    thread::sleep(time::Duration::from_millis(1000));
+                } else {
+                    let mut results_indv_list: Vec<TpvResultsIndv> = Vec::new();
+
+                    match serde_json::from_str(&last_body.as_str()) {
+                        Ok(obj) => results_indv_list = obj,
+                        Err(_) => () 
+                    }
+                    
+                    log::info!("'results_indv' json:\n{results_indv_list:#?}");
+
+                    // all good, we got some data
+                    update_source(&source, DataSourceStatus::Ok);
+                    {
+                        let mut results_indv_locked = focus.lock().unwrap();
+                        *results_indv_locked = results_indv_list;
+                    }
+                    thread::sleep(time::Duration::from_millis(5000));
+                }           
+            }
+        });
+    }
+
+    fn collect_results_team(&self) {
+        let source = Arc::clone(&self.source_results_team);
+        let focus = Arc::clone(&self.data_results_team);
+        let url = format!("{}/{}", self.base_uri, "bcast/resultsTeam");
+
+        thread::spawn(move || {
+            log::info!("DataCollector thread for 'results_team' started");
+
+            let status:Arc<Mutex<u16>>  = Arc::new(Mutex::new(0));
+            let body:Arc<Mutex<String>>  = Arc::new(Mutex::new(String::new()));
+
+            loop {             
+                let (last_status, last_body) = get_data_http(&status, &body, url.as_str());
+
+                if last_status != 200 {
+                    log::warn!("Failed to retrive 'results_team' data");
+                    // failed to get the data
+                    update_source(&source, DataSourceStatus::NotOk);
+                    thread::sleep(time::Duration::from_millis(1000));
+                } else {
+                    let mut results_team_list: Vec<TpvResultsTeam> = Vec::new();
+
+                    match serde_json::from_str(&last_body.as_str()) {
+                        Ok(obj) => results_team_list = obj,
+                        Err(_) => () 
+                    }
+                    
+                    log::info!("'results_team' json:\n{results_team_list:#?}");
+
+                    // all good, we got some data
+                    update_source(&source, DataSourceStatus::Ok);
+                    {
+                        let mut results_team_locked = focus.lock().unwrap();
+                        *results_team_locked = results_team_list;
+                    }
+                    thread::sleep(time::Duration::from_millis(5000));
+                }           
+            }
+        });
+    }
+
     pub fn start(&mut self) {
         let mut s = self.source_focus.lock().unwrap();
         if !s.started  {
@@ -398,6 +626,9 @@ impl DataCollector {
             self.collect_nearest();
             self.collect_event();
             self.collect_entries();
+            self.collect_groups();
+            self.collect_results_indv();
+            self.collect_results_team();
         }
     }
 
@@ -417,6 +648,18 @@ impl DataCollector {
         self.source_entries.lock().unwrap().clone()
     }
 
+    pub fn get_source_groups(&self) -> DataSource {
+        self.source_groups.lock().unwrap().clone()
+    }
+
+    pub fn get_source_results_indv(&self) -> DataSource {
+        self.source_results_indv.lock().unwrap().clone()
+    }
+
+    pub fn get_source_results_team(&self) -> DataSource {
+        self.source_results_team.lock().unwrap().clone()
+    }
+
     pub fn get_focus(&self) -> TpvFocus {
          self.data_focus.lock().unwrap().clone()
     }
@@ -431,6 +674,18 @@ impl DataCollector {
 
     pub fn get_entries(&self) -> Vec<TpvEntries> {
         self.data_entries.lock().unwrap().clone()
+    }
+
+    pub fn get_groups(&self) -> Vec<TpvGroups> {
+        self.data_groups.lock().unwrap().clone()
+    }
+
+    pub fn get_results_indv(&self) -> Vec<TpvResultsIndv> {
+        self.data_results_indv.lock().unwrap().clone()
+    }
+
+    pub fn get_results_team(&self) -> Vec<TpvResultsTeam> {
+        self.data_results_team.lock().unwrap().clone()
     }
 }
 

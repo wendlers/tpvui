@@ -9,6 +9,9 @@ mod focus;
 mod nearest;
 mod event;
 mod entries;
+mod groups;
+mod results_indv;
+mod results_team;
 
 pub const APP_KEY: &str = "tpvui";
 
@@ -20,6 +23,9 @@ pub struct TpvUiApp {
     widget_nearest: nearest::Widget,
     widget_event: event::Widget,
     widget_entries: entries::Widget,
+    widget_groups: groups::Widget,
+    widget_results_indv: results_indv::Widget,
+    widget_results_team: results_team::Widget,
 
     #[serde(skip)]
     dc: DataCollector,
@@ -32,6 +38,9 @@ impl Default for TpvUiApp {
             widget_nearest: nearest::Widget::new(),   
             widget_event: event::Widget::new(),
             widget_entries: entries::Widget::new(),
+            widget_groups: groups::Widget::new(),
+            widget_results_indv: results_indv::Widget::new(),
+            widget_results_team: results_team::Widget::new(),
             dc: DataCollector::new(),
         }
     }
@@ -107,6 +116,9 @@ impl TpvUiApp {
                     self.widget_nearest.show_label(ui);
                     self.widget_event.show_label(ui);
                     self.widget_entries.show_label(ui);
+                    self.widget_groups.show_label(ui);
+                    self.widget_results_indv.show_label(ui);
+                    self.widget_results_team.show_label(ui);
                 });
             });
          });
@@ -124,10 +136,13 @@ impl TpvUiApp {
                         .on_hover_text("tpvui was compiled with debug enabled");
                         ui.add(egui::Separator::default().vertical());
                     }
-                    self.data_source_status(ui, &&self.dc.get_source_focus(), "focus");
+                    self.data_source_status(ui, &self.dc.get_source_focus(), "focus");
                     self.data_source_status(ui, &self.dc.get_source_nearest(), "nearest");
-                    self.data_source_status(ui, &&self.dc.get_source_event(), "event");
-                    self.data_source_status(ui, &&&self.dc.get_source_entries(), "entries");
+                    self.data_source_status(ui, &self.dc.get_source_event(), "event");
+                    self.data_source_status(ui, &self.dc.get_source_entries(), "entries");
+                    self.data_source_status(ui, &self.dc.get_source_groups(), "groups");
+                    self.data_source_status(ui, &self.dc.get_source_results_indv(), "resultsIndv");
+                    self.data_source_status(ui, &self.dc.get_source_results_team(), "resultsTeam");
                 }
             );
         });
@@ -159,6 +174,25 @@ impl TpvUiApp {
                 self.widget_entries.show_window(ui, self.dc.get_entries());
             });
         }
+
+        if self.widget_groups.is_visible() {            
+            egui::Window::new(self.widget_groups.get_title()).show(ctx, |ui| {
+                self.widget_groups.show_window(ui, self.dc.get_groups());
+            });
+        }
+
+        if self.widget_results_indv.is_visible() {            
+            egui::Window::new(self.widget_results_indv.get_title()).show(ctx, |ui| {
+                self.widget_results_indv.show_window(ui, self.dc.get_results_indv());
+            });
+        }
+
+        if self.widget_results_team.is_visible() {            
+            egui::Window::new(self.widget_results_team.get_title()).show(ctx, |ui| {
+                self.widget_results_team.show_window(ui, self.dc.get_results_team());
+            });
+        }
+
     }
 }
 
