@@ -48,6 +48,7 @@ impl Widget {
                         self.key_value_simple(ui, "Position", format!("{}", n.position), "");
                         self.key_value_simple(ui, "Eliminated", format!("{}", n.isEliminated), "");
                         ui.end_row();
+                        
                         ui.label("");
                         ui.end_row();
                     }

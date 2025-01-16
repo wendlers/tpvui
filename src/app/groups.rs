@@ -34,7 +34,17 @@ impl Widget {
                 egui::Grid::new("groups_data_grid").show(ui, |ui| {
                     for g in groups.iter() {
                         self.key_value_simple(ui, "Group #1", format!("{}", g.groupNum1), "");
+                        self.key_value_simple(ui, "Group #2", format!("{}", g.groupNum2), "");
                         ui.end_row();
+
+                        self.key_value_simple(ui, "Time gap #1", format!("{}", g.timeGap1), "s");
+                        self.key_value_simple(ui, "Time gap #2", format!("{}", g.timeGap2), "s");
+                        ui.end_row();
+
+                        self.key_value_simple(ui, "Size", format!("{}", g.size), "");
+                        self.key_value_simple(ui, "Peleton", format!("{}", g.isPeloton), "");
+                        ui.end_row();
+
                         ui.label("");
                         ui.end_row();
                     }

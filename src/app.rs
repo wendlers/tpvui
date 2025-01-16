@@ -50,6 +50,7 @@ impl TpvUiApp {
     /// Called once before the first frame.
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         egui_extras::install_image_loaders(&cc.egui_ctx);
+        cc.egui_ctx.request_repaint_after(time::Duration::from_millis(500));
 
         // Load previous app state (if any).
         if let Some(storage) = cc.storage {
@@ -205,8 +206,6 @@ impl eframe::App for TpvUiApp {
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.dc.start();
-
-        ctx.request_repaint_after(time::Duration::from_millis(500));
         ctx.set_pixels_per_point(1.0);
 
         self.menu_panel(ctx);

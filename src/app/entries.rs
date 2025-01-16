@@ -40,6 +40,7 @@ impl Widget {
                         self.key_value_simple(ui, "Team", format!("{}", e.team), "");
                         self.key_value_simple(ui, "Team Code", format!("{}", e.teamCode), "");
                         ui.end_row();
+                        
                         ui.label("");
                         ui.end_row();
                     }
