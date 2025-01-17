@@ -247,6 +247,7 @@ impl TpvResultsTeam {
 
 #[derive(Clone, PartialEq)]
 pub enum DataSourceStatus {
+    Unknown,
     Ok,
     NotOk,
 }
@@ -254,6 +255,7 @@ pub enum DataSourceStatus {
 #[derive(Clone)]
 pub struct DataSource {
     pub started: bool,
+    pub stopped: bool,
     pub status: DataSourceStatus,
     pub frame: u64,
 }
@@ -262,7 +264,8 @@ impl DataSource {
     pub fn new() -> DataSource {
         DataSource {
             started: false,
-            status: DataSourceStatus::NotOk,
+            stopped: true,
+            status: DataSourceStatus::Unknown,
             frame: 0,
         }
     }
@@ -302,17 +305,17 @@ impl DataCollector {
             source_focus:  Arc::new(Mutex::new(DataSource::new())),
             data_focus:  Arc::new(Mutex::new(TpvFocus::new())),
             source_nearest:  Arc::new(Mutex::new(DataSource::new())),
-            data_nearest:  Arc::new(Mutex::new(Vec::new())),
+            data_nearest:  Arc::new(Mutex::new(vec![TpvNearest::new()])),
             source_event:  Arc::new(Mutex::new(DataSource::new())),
             data_event: Arc::new(Mutex::new(TpvEvent::new())),
             source_entries:  Arc::new(Mutex::new(DataSource::new())),
-            data_entries: Arc::new(Mutex::new(Vec::new())),
+            data_entries: Arc::new(Mutex::new(vec![TpvEntries::new()])),
             source_groups:  Arc::new(Mutex::new(DataSource::new())),
-            data_groups: Arc::new(Mutex::new(Vec::new())),
+            data_groups: Arc::new(Mutex::new(vec![TpvGroups::new()])),
             source_results_indv:  Arc::new(Mutex::new(DataSource::new())),
-            data_results_indv: Arc::new(Mutex::new(Vec::new())),
+            data_results_indv: Arc::new(Mutex::new(vec![TpvResultsIndv::new()])),
             source_results_team:  Arc::new(Mutex::new(DataSource::new())),
-            data_results_team: Arc::new(Mutex::new(Vec::new())),
+            data_results_team: Arc::new(Mutex::new(vec![TpvResultsTeam::new()])),
         }
     }
 
@@ -322,18 +325,24 @@ impl DataCollector {
         let url = format!("{}/{}", self.base_uri, "bcast/focus");
 
         thread::spawn(move || {
+            set_source_started(&source, true);
+
             log::info!("DataCollector thread for 'focus' started");
 
             let status:Arc<Mutex<u16>>  = Arc::new(Mutex::new(0));
             let body:Arc<Mutex<String>>  = Arc::new(Mutex::new(String::new()));
 
             loop {
+                if !is_source_started(&source) {
+                    break;
+                }
+
                 let (last_status, last_body) = get_data_http(&status, &body, url.as_str());
 
                 if last_status != 200 {
                     log::warn!("Failed to retrive 'focus' data");
                     // failed to get the data
-                    update_source(&source, DataSourceStatus::NotOk);
+                    update_source_status(&source, DataSourceStatus::NotOk);
                     thread::sleep(time::Duration::from_millis(1000));
                 } else {
                     let mut focus_list: Vec<TpvFocus> = Vec::new();
@@ -346,7 +355,7 @@ impl DataCollector {
                     log::info!("'focus' json:\n{focus_list:#?}");
 
                     // all good, we got some data
-                    update_source(&source, DataSourceStatus::Ok);
+                    update_source_status(&source, DataSourceStatus::Ok);
                     {
                         let mut focus_locked = focus.lock().unwrap();
 
@@ -356,8 +365,11 @@ impl DataCollector {
                         }
                     }
                     thread::sleep(time::Duration::from_millis(250));
-                }           
+                }
             }
+            log::info!("DataCollector thread for 'focus' stopped");
+            set_source_started(&source, false);
+            update_source_status(&source, DataSourceStatus::Unknown);
         });
     }
 
@@ -367,18 +379,24 @@ impl DataCollector {
         let url = format!("{}/{}", self.base_uri, "bcast/nearest");
 
         thread::spawn(move || {
+            set_source_started(&source, true);
+
             log::info!("DataCollector thread for 'nearest' started");
 
             let status:Arc<Mutex<u16>>  = Arc::new(Mutex::new(0));
             let body:Arc<Mutex<String>>  = Arc::new(Mutex::new(String::new()));
 
             loop {
+                if !is_source_started(&source) {
+                    break;
+                }
+
                 let (last_status, last_body) = get_data_http(&status, &body, url.as_str());
 
                 if last_status != 200 {
                     log::warn!("Failed to retrive 'nearest' data");
                     // failed to get the data
-                    update_source(&source, DataSourceStatus::NotOk);
+                    update_source_status(&source, DataSourceStatus::NotOk);
                     thread::sleep(time::Duration::from_millis(1000));
                 } else {
                     let mut nearest_list: Vec<TpvNearest> = Vec::new();
@@ -391,7 +409,7 @@ impl DataCollector {
                     log::info!("'nearest' json:\n{nearest_list:#?}");
 
                     // all good, we got some data
-                    update_source(&source, DataSourceStatus::Ok);
+                    update_source_status(&source, DataSourceStatus::Ok);
                     {
                         let mut nearest_locked = focus.lock().unwrap();
                         *nearest_locked = nearest_list;
@@ -399,6 +417,9 @@ impl DataCollector {
                     thread::sleep(time::Duration::from_millis(250));
                 }           
             }
+            log::info!("DataCollector thread for 'nearest' stopped");
+            set_source_started(&source, false);
+            update_source_status(&source, DataSourceStatus::Unknown);
         });
     }
 
@@ -408,18 +429,24 @@ impl DataCollector {
         let url = format!("{}/{}", self.base_uri, "bcast/event");
 
         thread::spawn(move || {
+            set_source_started(&source, true);
+
             log::info!("DataCollector thread for 'event' started");
 
             let status:Arc<Mutex<u16>>  = Arc::new(Mutex::new(0));
             let body:Arc<Mutex<String>>  = Arc::new(Mutex::new(String::new()));
 
             loop {
+                if !is_source_started(&source) {
+                    break;
+                }
+
                 let (last_status, last_body) = get_data_http(&status, &body, url.as_str());
 
                 if last_status != 200 {
                     // failed to get the data
                     log::warn!("Failed to retrive 'event' data");
-                    update_source(&source, DataSourceStatus::NotOk);
+                    update_source_status(&source, DataSourceStatus::NotOk);
                     thread::sleep(time::Duration::from_millis(1000));
                 } else {
                     // 'type' is a reserved RUST keyword. Thus we can not have a field named 'type'
@@ -436,7 +463,7 @@ impl DataCollector {
                     log::info!("'event' json:\n{event_list:#?}");
 
                     // all good, we got some data
-                    update_source(&source, DataSourceStatus::Ok);
+                    update_source_status(&source, DataSourceStatus::Ok);
                     {
                         let mut event_locked = event.lock().unwrap();
 
@@ -448,6 +475,9 @@ impl DataCollector {
                     thread::sleep(time::Duration::from_millis(5000));
                 }           
             }
+            log::info!("DataCollector thread for 'event' stopped");
+            set_source_started(&source, false);
+            update_source_status(&source, DataSourceStatus::Unknown);            
         });
     }
 
@@ -457,18 +487,24 @@ impl DataCollector {
         let url = format!("{}/{}", self.base_uri, "bcast/entries");
 
         thread::spawn(move || {
+            set_source_started(&source, true);
+
             log::info!("DataCollector thread for 'entries' started");
 
             let status:Arc<Mutex<u16>>  = Arc::new(Mutex::new(0));
             let body:Arc<Mutex<String>>  = Arc::new(Mutex::new(String::new()));
 
-            loop {             
+            loop {        
+                if !is_source_started(&source) {
+                    break;
+                }
+
                 let (last_status, last_body) = get_data_http(&status, &body, url.as_str());
 
                 if last_status != 200 {
                     log::warn!("Failed to retrive 'entries' data");
                     // failed to get the data
-                    update_source(&source, DataSourceStatus::NotOk);
+                    update_source_status(&source, DataSourceStatus::NotOk);
                     thread::sleep(time::Duration::from_millis(1000));
                 } else {
                     let mut entries_list: Vec<TpvEntries> = Vec::new();
@@ -481,7 +517,7 @@ impl DataCollector {
                     log::info!("'entries' json:\n{entries_list:#?}");
 
                     // all good, we got some data
-                    update_source(&source, DataSourceStatus::Ok);
+                    update_source_status(&source, DataSourceStatus::Ok);
                     {
                         let mut entries_locked = focus.lock().unwrap();
                         *entries_locked = entries_list;
@@ -489,6 +525,9 @@ impl DataCollector {
                     thread::sleep(time::Duration::from_millis(5000));
                 }           
             }
+            log::info!("DataCollector thread for 'entries' stopped");
+            set_source_started(&source, false);
+            update_source_status(&source, DataSourceStatus::Unknown);            
         });
     }
 
@@ -498,18 +537,24 @@ impl DataCollector {
         let url = format!("{}/{}", self.base_uri, "bcast/groups");
 
         thread::spawn(move || {
+            set_source_started(&source, true);
+
             log::info!("DataCollector thread for 'groups' started");
 
             let status:Arc<Mutex<u16>>  = Arc::new(Mutex::new(0));
             let body:Arc<Mutex<String>>  = Arc::new(Mutex::new(String::new()));
 
-            loop {             
+            loop {  
+                if !is_source_started(&source) {
+                    break;
+                }
+
                 let (last_status, last_body) = get_data_http(&status, &body, url.as_str());
 
                 if last_status != 200 {
                     log::warn!("Failed to retrive 'groups' data");
                     // failed to get the data
-                    update_source(&source, DataSourceStatus::NotOk);
+                    update_source_status(&source, DataSourceStatus::NotOk);
                     thread::sleep(time::Duration::from_millis(1000));
                 } else {
                     let last_body = last_body.replace(": null,", ": \"\",");
@@ -523,7 +568,7 @@ impl DataCollector {
                     log::info!("'groups' json:\n{groups_list:#?}");
 
                     // all good, we got some data
-                    update_source(&source, DataSourceStatus::Ok);
+                    update_source_status(&source, DataSourceStatus::Ok);
                     {
                         let mut groups_locked = focus.lock().unwrap();
                         *groups_locked = groups_list;
@@ -531,6 +576,9 @@ impl DataCollector {
                     thread::sleep(time::Duration::from_millis(5000));
                 }           
             }
+            log::info!("DataCollector thread for 'groups' stopped");
+            set_source_started(&source, false);
+            update_source_status(&source, DataSourceStatus::Unknown);
         });
     }
 
@@ -540,18 +588,24 @@ impl DataCollector {
         let url = format!("{}/{}", self.base_uri, "bcast/resultsIndv");
 
         thread::spawn(move || {
+            set_source_started(&source, true);
+
             log::info!("DataCollector thread for 'results_indv' started");
 
             let status:Arc<Mutex<u16>>  = Arc::new(Mutex::new(0));
             let body:Arc<Mutex<String>>  = Arc::new(Mutex::new(String::new()));
 
-            loop {             
+            loop {       
+                if !is_source_started(&source) {
+                    break;
+                }
+
                 let (last_status, last_body) = get_data_http(&status, &body, url.as_str());
 
                 if last_status != 200 {
                     log::warn!("Failed to retrive 'results_indv' data");
                     // failed to get the data
-                    update_source(&source, DataSourceStatus::NotOk);
+                    update_source_status(&source, DataSourceStatus::NotOk);
                     thread::sleep(time::Duration::from_millis(1000));
                 } else {
                     let mut results_indv_list: Vec<TpvResultsIndv> = Vec::new();
@@ -564,7 +618,7 @@ impl DataCollector {
                     log::info!("'results_indv' json:\n{results_indv_list:#?}");
 
                     // all good, we got some data
-                    update_source(&source, DataSourceStatus::Ok);
+                    update_source_status(&source, DataSourceStatus::Ok);
                     {
                         let mut results_indv_locked = focus.lock().unwrap();
                         *results_indv_locked = results_indv_list;
@@ -572,6 +626,9 @@ impl DataCollector {
                     thread::sleep(time::Duration::from_millis(5000));
                 }           
             }
+            log::info!("DataCollector thread for 'results_indv' stopped");
+            set_source_started(&source, false);
+            update_source_status(&source, DataSourceStatus::Unknown);
         });
     }
 
@@ -581,18 +638,24 @@ impl DataCollector {
         let url = format!("{}/{}", self.base_uri, "bcast/resultsTeam");
 
         thread::spawn(move || {
+            set_source_started(&source, true);
+
             log::info!("DataCollector thread for 'results_team' started");
 
             let status:Arc<Mutex<u16>>  = Arc::new(Mutex::new(0));
             let body:Arc<Mutex<String>>  = Arc::new(Mutex::new(String::new()));
 
-            loop {             
+            loop {      
+                if !is_source_started(&source) {
+                    break;
+                }
+
                 let (last_status, last_body) = get_data_http(&status, &body, url.as_str());
 
                 if last_status != 200 {
                     log::warn!("Failed to retrive 'results_team' data");
                     // failed to get the data
-                    update_source(&source, DataSourceStatus::NotOk);
+                    update_source_status(&source, DataSourceStatus::NotOk);
                     thread::sleep(time::Duration::from_millis(1000));
                 } else {
                     let mut results_team_list: Vec<TpvResultsTeam> = Vec::new();
@@ -605,31 +668,112 @@ impl DataCollector {
                     log::info!("'results_team' json:\n{results_team_list:#?}");
 
                     // all good, we got some data
-                    update_source(&source, DataSourceStatus::Ok);
+                    update_source_status(&source, DataSourceStatus::Ok);
                     {
                         let mut results_team_locked = focus.lock().unwrap();
                         *results_team_locked = results_team_list;
                     }
                     thread::sleep(time::Duration::from_millis(5000));
-                }           
+                }
             }
+            log::info!("DataCollector thread for 'results_team' stopped");
+            set_source_started(&source, false);
+            update_source_status(&source, DataSourceStatus::Unknown);
         });
     }
 
     pub fn start(&mut self) {
-        let mut s = self.source_focus.lock().unwrap();
-        if !s.started  {
-            log::info!("DataCollector started");
-            s.started = true;
-
+        let s = self.source_focus.lock().unwrap();
+        if !s.started && s.stopped {
             self.collect_focus();
+        }
+        let s = self.source_nearest.lock().unwrap();
+        if !s.started && s.stopped  {
             self.collect_nearest();
+        }
+        let s = self.source_event.lock().unwrap();
+        if !s.started && s.stopped  {
             self.collect_event();
+        }
+        let s = self.source_entries.lock().unwrap();
+        if !s.started && s.stopped  {
             self.collect_entries();
+        }
+        let s = self.source_groups.lock().unwrap();
+        if !s.started && s.stopped  {
             self.collect_groups();
+        }
+        let s = self.source_results_indv.lock().unwrap();
+        if !s.started && s.stopped  {
             self.collect_results_indv();
+        }
+        let s = self.source_results_team.lock().unwrap();
+        if !s.started && s.stopped  {
             self.collect_results_team();
         }
+    }
+
+    pub fn stop(&self) {
+        let mut s = self.source_focus.lock().unwrap();
+        if s.started && !s.stopped {
+            s.started = false;
+        }
+        let mut s = self.source_nearest.lock().unwrap();
+        if s.started && !s.stopped  {
+            s.started = false;
+        }
+        let mut s = self.source_event.lock().unwrap();
+        if s.started && !s.stopped  {
+            s.started = false;
+        }
+        let mut s = self.source_entries.lock().unwrap();
+        if s.started && !s.stopped  {
+            s.started = false;
+        }
+        let mut s = self.source_groups.lock().unwrap();
+        if s.started && !s.stopped  {
+            s.started = false;
+        }
+        let mut s = self.source_results_indv.lock().unwrap();
+        if s.started && !s.stopped  {
+            s.started = false;
+        }
+        let mut s = self.source_results_team.lock().unwrap();
+        if s.started && !s.stopped  {
+            s.started = false;
+        }
+    }
+
+    pub fn is_running(&self) -> bool {
+        let s = self.source_focus.lock().unwrap();
+        if !s.started && s.stopped {
+            return false;
+        }
+        let s = self.source_nearest.lock().unwrap();
+        if !s.started && s.stopped {
+            return false;
+        }
+        let s = self.source_event.lock().unwrap();
+        if !s.started && s.stopped {
+            return false;
+        }
+        let s = self.source_entries.lock().unwrap();
+        if !s.started && s.stopped {
+            return false;
+        }
+        let s = self.source_groups.lock().unwrap();
+        if !s.started && s.stopped {
+            return false;
+        }
+        let s = self.source_results_indv.lock().unwrap();
+        if !s.started && s.stopped {
+            return false;
+        }
+        let s = self.source_results_team.lock().unwrap();
+        if !s.started && s.stopped {
+            return false;
+        }
+        true
     }
 
     pub fn get_source_focus(&self) -> DataSource {
@@ -689,7 +833,7 @@ impl DataCollector {
     }
 }
 
-fn update_source(source: &Arc<Mutex<DataSource>>, s: DataSourceStatus) {
+fn update_source_status(source: &Arc<Mutex<DataSource>>, s: DataSourceStatus) {
     let mut source_locked = source.lock().unwrap();
    
     if s == DataSourceStatus::Ok {
@@ -697,6 +841,17 @@ fn update_source(source: &Arc<Mutex<DataSource>>, s: DataSourceStatus) {
     }
    
     source_locked.status = s;
+}
+
+fn set_source_started(source: &Arc<Mutex<DataSource>>, started: bool) {
+    let mut source_locked = source.lock().unwrap();
+    source_locked.started = started;
+    source_locked.stopped = !started;
+}
+
+fn is_source_started(source: &Arc<Mutex<DataSource>>) -> bool {
+    let source_locked = source.lock().unwrap();
+    source_locked.started 
 }
 
 fn get_data_http(status: &Arc<Mutex<u16>>, body: &Arc<Mutex<String>>, url: &str) -> (u16, String) {

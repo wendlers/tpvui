@@ -62,9 +62,12 @@ impl TpvUiApp {
         let mut status = String::from(label);
         let mut color = Color32::GREEN;
 
-        if ds.status == DataSourceStatus::NotOk {
-            status.push_str(" ⚠ ");
-            color = Color32::RED;
+        if ds.status == DataSourceStatus::Unknown {
+            status.push_str(" X ");
+            color = Color32::GRAY;
+        } else if ds.status == DataSourceStatus::NotOk {
+                status.push_str(" ⚠ ");
+                color = Color32::RED;
         } else {
             status.push_str(" ☭ ");
         }
@@ -94,9 +97,20 @@ impl TpvUiApp {
                             }
                         });
                         ui.add_space(16.0);
+                        ui.menu_button("Data Source", |ui| {
+                            if self.dc.is_running() {
+                                if ui.button("Stop receiving").clicked() {
+                                    self.dc.stop();
+                                }                            
+                            } else {
+                                if ui.button("Start receiving").clicked() {
+                                    self.dc.start();
+                                }    
+                            }
+                        });
+                        ui.add_space(16.0);                        
                     }
-                });
-                
+                });       
                 ui.with_layout(
                     egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         egui::widgets::global_theme_preference_buttons(ui);
@@ -131,11 +145,25 @@ impl TpvUiApp {
                     if cfg!(debug_assertions) {
                         ui.label(
                             egui::RichText::new("☢ Debug build ☢")
-                                    .color(ui.visuals().warn_fg_color),
+                                    .color(ui.visuals().warn_fg_color)
                         )
                         .on_hover_text("tpvui was compiled with debug enabled");
                         ui.add(egui::Separator::default().vertical());
                     }
+
+                    if self.dc.is_running() {
+                        ui.label(
+                            egui::RichText::new("★ Started")
+                                    .color(Color32::GREEN)
+                        );
+                    } else {
+                        ui.label(
+                            egui::RichText::new("★ Started")
+                                    .color(Color32::GRAY)
+                        );
+                    }
+                    ui.add(egui::Separator::default().vertical());
+
                     self.data_source_status(ui, &self.dc.get_source_focus(), "focus");
                     self.data_source_status(ui, &self.dc.get_source_nearest(), "nearest");
                     self.data_source_status(ui, &self.dc.get_source_event(), "event");
@@ -204,7 +232,7 @@ impl eframe::App for TpvUiApp {
 
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        self.dc.start();
+        // self.dc.start();
         ctx.set_pixels_per_point(1.0);
         ctx.request_repaint_after(time::Duration::from_millis(500));
 
