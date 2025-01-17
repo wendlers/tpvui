@@ -12,6 +12,7 @@ mod entries;
 mod groups;
 mod results_indv;
 mod results_team;
+mod setings_source;
 
 pub const APP_KEY: &str = "tpvui";
 
@@ -26,6 +27,7 @@ pub struct TpvUiApp {
     widget_groups: groups::Widget,
     widget_results_indv: results_indv::Widget,
     widget_results_team: results_team::Widget,
+    widget_settings_source: setings_source::Widget,
 
     #[serde(skip)]
     dc: DataCollector,
@@ -41,6 +43,7 @@ impl Default for TpvUiApp {
             widget_groups: groups::Widget::new(),
             widget_results_indv: results_indv::Widget::new(),
             widget_results_team: results_team::Widget::new(),
+            widget_settings_source: setings_source::Widget::new(),
             dc: DataCollector::new(),
         }
     }
@@ -54,7 +57,7 @@ impl TpvUiApp {
         // Load previous app state (if any).
         if let Some(storage) = cc.storage {
             return eframe::get_value(storage, APP_KEY).unwrap_or_default();
-        }        
+        }
         Default::default()
     }
     
@@ -98,12 +101,17 @@ impl TpvUiApp {
                         });
                         ui.add_space(16.0);
                         ui.menu_button("Data Source", |ui| {
+                            if ui.button("Settings").clicked() {
+                                self.widget_settings_source.visible = !self.widget_settings_source.visible; 
+                            }
+                            ui.separator();
                             if self.dc.is_running() {
                                 if ui.button("Stop receiving").clicked() {
                                     self.dc.stop();
                                 }                            
                             } else {
                                 if ui.button("Start receiving").clicked() {
+                                    self.dc.set_base_uri(self.widget_settings_source.url.clone());
                                     self.dc.start();
                                 }    
                             }
@@ -218,6 +226,12 @@ impl TpvUiApp {
         if self.widget_results_team.is_visible() {            
             egui::Window::new(self.widget_results_team.get_title()).show(ctx, |ui| {
                 self.widget_results_team.show_window(ui, self.dc.get_results_team());
+            });
+        }
+
+        if self.widget_settings_source.is_visible() {            
+            egui::Window::new(self.widget_settings_source.get_title()).show(ctx, |ui| {
+                self.widget_settings_source.show_window(ui);
             });
         }
 

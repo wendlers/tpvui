@@ -300,8 +300,7 @@ pub struct DataCollector {
 impl DataCollector {
     pub fn new() -> DataCollector {
         DataCollector {
-            // base_uri: String::from("http://localhost:8080"),
-            base_uri: String::from("http://192.168.2.118:8080"),
+            base_uri: String::from("http://localhost:8080"),
             source_focus:  Arc::new(Mutex::new(DataSource::new())),
             data_focus:  Arc::new(Mutex::new(TpvFocus::new())),
             source_nearest:  Arc::new(Mutex::new(DataSource::new())),
@@ -830,6 +829,10 @@ impl DataCollector {
 
     pub fn get_results_team(&self) -> Vec<TpvResultsTeam> {
         self.data_results_team.lock().unwrap().clone()
+    }
+
+    pub fn set_base_uri(&mut self, uri: String) {
+        self.base_uri = uri;
     }
 }
 
