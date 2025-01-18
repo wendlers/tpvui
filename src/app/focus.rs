@@ -7,7 +7,6 @@ pub struct Widget {
     pub visible: bool,
 }
 
-#[allow(dead_code)]
 impl WidgetBase for Widget {   
     fn get_title(&self) -> &'static str {
         "Focus"
