@@ -12,7 +12,7 @@ pub trait WidgetBase {
     } 
     
     fn show_label(&mut self, ui: &mut egui::Ui);
-    
+
     fn key_value_simple(&self, ui: &mut egui::Ui, k: &str, v: String, u: &str) {
         let fsize = self.get_default_text_size();
 

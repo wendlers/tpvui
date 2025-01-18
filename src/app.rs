@@ -14,7 +14,7 @@ mod results_indv;
 mod results_team;
 mod setings_source;
 
-pub const APP_KEY: &str = "tpvui";
+const APP_KEY: &str = "tpvui";
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -99,25 +99,25 @@ impl TpvUiApp {
                                 ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                             }
                         });
-                        ui.add_space(16.0);
-                        ui.menu_button("Data Source", |ui| {
-                            if ui.button("Settings").clicked() {
-                                self.widget_settings_source.visible = !self.widget_settings_source.visible; 
-                            }
-                            ui.separator();
-                            if self.dc.is_running() {
-                                if ui.button("Stop receiving").clicked() {
-                                    self.dc.stop();
-                                }                            
-                            } else {
-                                if ui.button("Start receiving").clicked() {
-                                    self.dc.set_base_uri(self.widget_settings_source.url.clone());
-                                    self.dc.start();
-                                }    
-                            }
-                        });
-                        ui.add_space(16.0);                        
                     }
+                    ui.add_space(16.0);
+                    ui.menu_button("Data Source", |ui| {
+                        if ui.button("Settings").clicked() {
+                            self.widget_settings_source.visible = !self.widget_settings_source.visible; 
+                        }
+                        ui.separator();
+                        if self.dc.is_running() {
+                            if ui.button("Stop receiving").clicked() {
+                                self.dc.stop();
+                            }                            
+                        } else {
+                            if ui.button("Start receiving").clicked() {
+                                self.dc.set_base_uri(self.widget_settings_source.url.clone());
+                                self.dc.start();
+                            }    
+                        }
+                    });
+                    ui.add_space(16.0);                        
                 });       
                 ui.with_layout(
                     egui::Layout::right_to_left(egui::Align::Center), |ui| {
@@ -134,6 +134,7 @@ impl TpvUiApp {
         egui::SidePanel::left("widget_panel").show(ctx, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
                 ui.with_layout(egui::Layout::top_down_justified(egui::Align::LEFT), |ui| {
+                    self.widged_focus.show_label(ui); 
                     self.widged_focus.show_label(ui);
                     self.widget_nearest.show_label(ui);
                     self.widget_event.show_label(ui);
@@ -183,58 +184,30 @@ impl TpvUiApp {
             );
         });
     }
-    
+
+    fn window_show_hide(ctx: &egui::Context, wdg: &impl WidgetBase, dc: &DataCollector) {
+        if wdg.is_visible() {            
+            egui::Window::new(wdg.get_title()).show(ctx, |ui| {
+                wdg.show_window(ui, dc);
+            });
+        }          
+    }
+
     fn widget_windows(&mut self, ctx: &egui::Context) {
-        if self.widged_focus.is_visible() {            
-            egui::Window::new(self.widged_focus.get_title())
-                .min_width(2500.0).show(ctx, |ui| {
-                self.widged_focus.show_window(ui, &self.dc);
-            });
-        }
-        
-        if self.widget_nearest.is_visible() {            
-            egui::Window::new(self.widget_nearest.get_title())
-                .min_width(1200.0).show(ctx, |ui| {
-                self.widget_nearest.show_window(ui, &self.dc);
-            });
-        }
-
-        if self.widget_event.is_visible() {            
-            egui::Window::new(self.widget_event.get_title()).show(ctx, |ui| {
-                self.widget_event.show_window(ui, &self.dc);
-            });
-        }
-
-        if self.widget_entries.is_visible() {            
-            egui::Window::new(self.widget_entries.get_title()).show(ctx, |ui| {
-                self.widget_entries.show_window(ui, &self.dc);
-            });
-        }
-
-        if self.widget_groups.is_visible() {            
-            egui::Window::new(self.widget_groups.get_title()).show(ctx, |ui| {
-                self.widget_groups.show_window(ui, &self.dc);
-            });
-        }
-
-        if self.widget_results_indv.is_visible() {            
-            egui::Window::new(self.widget_results_indv.get_title()).show(ctx, |ui| {
-                self.widget_results_indv.show_window(ui, &self.dc);
-            });
-        }
-
-        if self.widget_results_team.is_visible() {            
-            egui::Window::new(self.widget_results_team.get_title()).show(ctx, |ui| {
-                self.widget_results_team.show_window(ui, &self.dc);
-            });
-        }
+        TpvUiApp::window_show_hide(ctx, &self.widged_focus, &self.dc); 
+        TpvUiApp::window_show_hide(ctx, &self.widged_focus, &self.dc);
+        TpvUiApp::window_show_hide(ctx, &self.widget_nearest, &self.dc); 
+        TpvUiApp::window_show_hide(ctx, &self.widget_event, &self.dc); 
+        TpvUiApp::window_show_hide(ctx, &self.widget_entries, &self.dc); 
+        TpvUiApp::window_show_hide(ctx, &self.widget_groups, &self.dc); 
+        TpvUiApp::window_show_hide(ctx, &self.widget_results_indv, &self.dc); 
+        TpvUiApp::window_show_hide(ctx, &self.widget_results_team, &self.dc);
 
         if self.widget_settings_source.is_visible() {            
             egui::Window::new(self.widget_settings_source.get_title()).show(ctx, |ui| {
                 self.widget_settings_source.show_window(ui);
             });
         }
-
     }
 }
 
