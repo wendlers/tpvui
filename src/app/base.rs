@@ -10,7 +10,9 @@ pub trait WidgetBase {
         }
         visible
     } 
-
+    
+    fn show_label(&mut self, ui: &mut egui::Ui);
+    
     fn key_value_simple(&self, ui: &mut egui::Ui, k: &str, v: String, u: &str) {
         let fsize = self.get_default_text_size();
 
@@ -30,4 +32,8 @@ pub trait WidgetBase {
     }  
 
     fn get_title(&self) -> &'static str;
+
+    fn is_visible(&self) -> bool;
+
+    fn show_window(&self, ui: &mut egui::Ui, dc: &crate::data::DataCollector);
 }

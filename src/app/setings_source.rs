@@ -1,15 +1,7 @@
-use super::base;
-
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct Widget {
     pub visible: bool,
     pub url: String,
-}
-
-impl base::WidgetBase for Widget {   
-    fn get_title(&self) -> &'static str {
-        "Data Source Settings"
-    }
 }
 
 impl Widget {
@@ -18,6 +10,10 @@ impl Widget {
             visible: false,
             url: String::from("http://localhost:8080"),
         }
+    }
+
+    pub fn get_title(&self) -> &'static str {
+        "Data Source Settings"
     }
 
     pub fn is_visible(&self) -> bool {

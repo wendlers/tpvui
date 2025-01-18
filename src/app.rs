@@ -188,44 +188,44 @@ impl TpvUiApp {
         if self.widged_focus.is_visible() {            
             egui::Window::new(self.widged_focus.get_title())
                 .min_width(2500.0).show(ctx, |ui| {
-                self.widged_focus.show_window(ui, self.dc.get_focus());
+                self.widged_focus.show_window(ui, &self.dc);
             });
         }
         
         if self.widget_nearest.is_visible() {            
             egui::Window::new(self.widget_nearest.get_title())
                 .min_width(1200.0).show(ctx, |ui| {
-                self.widget_nearest.show_window(ui, self.dc.get_nearest());
+                self.widget_nearest.show_window(ui, &self.dc);
             });
         }
 
         if self.widget_event.is_visible() {            
             egui::Window::new(self.widget_event.get_title()).show(ctx, |ui| {
-                self.widget_event.show_window(ui, self.dc.get_event());
+                self.widget_event.show_window(ui, &self.dc);
             });
         }
 
         if self.widget_entries.is_visible() {            
             egui::Window::new(self.widget_entries.get_title()).show(ctx, |ui| {
-                self.widget_entries.show_window(ui, self.dc.get_entries());
+                self.widget_entries.show_window(ui, &self.dc);
             });
         }
 
         if self.widget_groups.is_visible() {            
             egui::Window::new(self.widget_groups.get_title()).show(ctx, |ui| {
-                self.widget_groups.show_window(ui, self.dc.get_groups());
+                self.widget_groups.show_window(ui, &self.dc);
             });
         }
 
         if self.widget_results_indv.is_visible() {            
             egui::Window::new(self.widget_results_indv.get_title()).show(ctx, |ui| {
-                self.widget_results_indv.show_window(ui, self.dc.get_results_indv());
+                self.widget_results_indv.show_window(ui, &self.dc);
             });
         }
 
         if self.widget_results_team.is_visible() {            
             egui::Window::new(self.widget_results_team.get_title()).show(ctx, |ui| {
-                self.widget_results_team.show_window(ui, self.dc.get_results_team());
+                self.widget_results_team.show_window(ui, &self.dc);
             });
         }
 

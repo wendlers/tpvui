@@ -1,34 +1,28 @@
-use crate::data::TpvFocus;
+use crate::data::DataCollector;
 
-use super::base::{self, WidgetBase};
+use super::base::WidgetBase;
 
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct Widget {
     pub visible: bool,
 }
 
-impl base::WidgetBase for Widget {   
+impl WidgetBase for Widget {   
     fn get_title(&self) -> &'static str {
         "Focus"
     }
-}
 
-impl Widget {
-    pub fn new() -> Widget {
-        Widget {
-            visible: false,
-        }
-    }
-
-    pub fn is_visible(&self) -> bool {
+    fn is_visible(&self) -> bool {
         self.visible
     }
 
-    pub fn show_label(&mut self, ui: &mut egui::Ui) {
+    fn show_label(&mut self, ui: &mut egui::Ui) {
         self.visible = self.show_label_base(ui, self.visible);
-    } 
+    }
 
-    pub fn show_window(&self, ui: &mut egui::Ui, focus: TpvFocus) {
+    fn show_window(&self, ui: &mut egui::Ui, dc: &DataCollector) {
+        let focus = dc.get_focus();
+
         egui::ScrollArea::horizontal().show(ui, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
                 egui::Grid::new("focus_ride_data_grid").show(ui, |ui| {
@@ -86,5 +80,13 @@ impl Widget {
                 });
             });
         });
+    }
+}
+
+impl Widget {
+    pub fn new() -> Widget {
+        Widget {
+            visible: false,
+        }
     }
 }
