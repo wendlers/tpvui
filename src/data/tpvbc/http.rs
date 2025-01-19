@@ -24,6 +24,7 @@ fn http_get_blocking(status: &Arc<Mutex<u16>>, body: &Arc<Mutex<String>>, url: &
     let body_clone = Arc::clone(&body);
     let request = ehttp::Request::get(url);
  
+    log::info!("GET {}", url);
 
     ehttp::fetch(request, move |result: ehttp::Result<ehttp::Response>| {
         let mut status_locked = status_clone.lock().unwrap();
@@ -66,9 +67,11 @@ impl BcastStreamFocusWorker {
         }
     }
 
-    pub fn start(&self) {
+    pub fn start(&mut self, url: String) {
         if self.stream.stopped() && !self.stream.started() {
             log::info!("BcastStreamFocusWorker::start");
+            self.url = url;
+            self.url.push_str("/bcast/focus");
             self.collect();
         }
     }
@@ -152,9 +155,11 @@ impl BcastStreamNearestWorker {
         }
     }
 
-    pub fn start(&self) {
+    pub fn start(&mut self, url: String) {
         if self.stream.stopped() && !self.stream.started() {
             log::info!("BcastStreamNearestWorker::start");
+            self.url = url;
+            self.url.push_str("/bcast/nearest");
             self.collect();
         }
     }
@@ -233,9 +238,11 @@ impl BcastStreamEventWorker {
         }
     }
 
-    pub fn start(&self) {
+    pub fn start(&mut self, url: String) {
         if self.stream.stopped() && !self.stream.started() {
             log::info!("BcastStreamEventWorker::start");
+            self.url = url;
+            self.url.push_str("/bcast/event");
             self.collect();
         }
     }
@@ -323,9 +330,11 @@ impl BcastStreamEntriesWorker {
         }
     }
 
-    pub fn start(&self) {
+    pub fn start(&mut self, url: String) {
         if self.stream.stopped() && !self.stream.started() {
             log::info!("BcastStreamEntriesWorker::start");
+            self.url = url;
+            self.url.push_str("/bcast/entries");
             self.collect();
         }
     }
@@ -404,9 +413,11 @@ impl BcastStreamGroupsWorker {
         }
     }
 
-    pub fn start(&self) {
+    pub fn start(&mut self, url: String) {
         if self.stream.stopped() && !self.stream.started() {
             log::info!("BcastStreamGroupsWorker::start");
+            self.url = url;
+            self.url.push_str("/bcast/groups");
             self.collect();
         }
     }
@@ -487,9 +498,11 @@ impl BcastStreamResultsIndvWorker {
         }
     }
 
-    pub fn start(&self) {
+    pub fn start(&mut self, url: String) {
         if self.stream.stopped() && !self.stream.started() {
             log::info!("BcastStreamResultsIndvWorker::start");
+            self.url = url;
+            self.url.push_str("/bcast/resultsIndv");
             self.collect();
         }
     }
@@ -570,9 +583,11 @@ impl BcastStreamResultsTeamWorker {
         }
     }
 
-    pub fn start(&self) {
+    pub fn start(&mut self, url: String) {
         if self.stream.stopped() && !self.stream.started() {
             log::info!("BcastStreamResultsTeamWorker::start");
+            self.url = url;
+            self.url.push_str("/bcast/resultsTeam");
             self.collect();
         }
     }
@@ -663,15 +678,15 @@ impl BcastStream {
         }
     }
 
-    pub fn start(&self) {
+    pub fn start(&mut self, url: String) {
         log::info!("BcastStream::start");
-        self.focus.start();
-        self.nearest.start();
-        self.event.start();
-        self.entries.start();
-        self.groups.start();
-        self.results_indv.start();
-        self.results_team.start();
+        self.focus.start(url.clone());
+        self.nearest.start(url.clone());
+        self.event.start(url.clone());
+        self.entries.start(url.clone());
+        self.groups.start(url.clone());
+        self.results_indv.start(url.clone());
+        self.results_team.start(url.clone());
     }
 
     pub fn stop(&self) {

@@ -2,7 +2,7 @@ use core::time;
 use base::WidgetBase;
 use egui::Color32;
 
-use crate::data::{Facade, DataCollector, tpvbc::BcastState, tpvbc::BcastStatus};
+use crate::data::{Facade, tpvbc::BcastState, tpvbc::BcastStatus};
 
 mod base;
 mod focus;
@@ -30,11 +30,7 @@ pub struct TpvUiApp {
     widget_settings_source: setings_source::Widget,
 
     #[serde(skip)]
-    dc: DataCollector,
-
-    #[serde(skip)]
     df: Facade,
-
 }
 
 impl Default for TpvUiApp {
@@ -48,7 +44,6 @@ impl Default for TpvUiApp {
             widget_results_indv: results_indv::Widget::new(),
             widget_results_team: results_team::Widget::new(),
             widget_settings_source: setings_source::Widget::new(),
-            dc: DataCollector::new(),
             df: Facade::new(),
         }
     }
@@ -111,17 +106,13 @@ impl TpvUiApp {
                             self.widget_settings_source.visible = !self.widget_settings_source.visible; 
                         }
                         ui.separator();
-                        // if self.dc.is_running() {
                         if self.df.running() {
                             if ui.button("Stop receiving").clicked() {
-                                // self.dc.stop();
                                 self.df.stop();
                             }                            
                         } else {
                             if ui.button("Start receiving").clicked() {
-                                self.dc.set_base_uri(self.widget_settings_source.url.clone());
-                                // self.dc.start();
-                                self.df.start();
+                                self.df.start(self.widget_settings_source.url.clone());
                             }    
                         }
                     });
@@ -193,9 +184,9 @@ impl TpvUiApp {
     }
 
     fn window_show_hide(ctx: &egui::Context, wdg: &impl WidgetBase, df: &Facade) {
-        if wdg.is_visible() {            
-            egui::Window::new(wdg.get_title()).show(ctx, |ui| {
-                wdg.show_window_v2(ui, df);
+        if wdg.visible() {            
+            egui::Window::new(wdg.title()).show(ctx, |ui| {
+                wdg.show_window(ui, df);
             });
         }          
     }
@@ -225,7 +216,6 @@ impl eframe::App for TpvUiApp {
 
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        // self.dc.start();
         ctx.set_pixels_per_point(1.0);
         ctx.request_repaint_after(time::Duration::from_millis(500));
 
