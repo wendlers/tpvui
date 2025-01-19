@@ -4,4 +4,3 @@ mod app;
 pub use app::TpvUiApp;
 
 mod data;
-pub use data::DataCollector;

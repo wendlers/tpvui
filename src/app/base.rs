@@ -36,4 +36,6 @@ pub trait WidgetBase {
     fn is_visible(&self) -> bool;
 
     fn show_window(&self, ui: &mut egui::Ui, dc: &crate::data::DataCollector);
+
+    fn show_window_v2(&self, _ui: &mut egui::Ui, _df: &crate::data::Facade) {}
 }

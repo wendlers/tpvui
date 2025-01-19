@@ -1,320 +1,51 @@
 use std::{sync::{Arc, Mutex}, thread, time};
-use serde::Deserialize;
 
-#[derive(Debug, Deserialize, Clone)]
-#[allow(dead_code, non_snake_case)]
-pub struct TpvFocus {
-    pub name: String,
-    pub country: String,
-    pub team: String,
-    pub teamCode: String,
-    pub power: u32,
-    pub avgPower: u32,
-    pub nrmPower: u32,
-    pub maxPower: u32,
-    pub cadence: u32,
-    pub avgCadence: u32,
-    pub maxCadence: u32,
-    pub heartrate: u32,
-    pub avgHeartrate: u32,
-    pub maxHeartrate: u32,
-    pub time: u32,
-    pub distance: u32,
-    pub height: u32,
-    pub speed: u32,
-    pub tss: u32,
-    pub calories: u32,
-    pub draft: u32,
-    pub windSpeed: u32,
-    pub windAngle: u32,
-    pub slope: i32,
-    pub eventLapsTotal: u32,
-    pub eventLapsDone: i32,
-    pub eventDistanceTotal: u32,
-    pub eventDistanceDone: u32,
-    pub eventDistanceToNextLocation: u32,
-    pub eventNextLocation: u32,
-    pub eventPosition: u32,
-}
-
-impl TpvFocus {
-    fn new() -> TpvFocus {
-        TpvFocus {
-            name: String::from("--"),
-            country:  String::from("--"),
-            team: String::from("--"),
-            teamCode: String::from("--"),
-            power: 0,
-            avgPower: 0,
-            nrmPower: 0,
-            maxPower: 0,
-            cadence: 0,
-            avgCadence: 0,
-            maxCadence: 0,
-            heartrate: 0,
-            avgHeartrate: 0,
-            maxHeartrate: 0,
-            time: 0,
-            distance: 0,
-            height: 0,
-            speed: 0,
-            tss: 0,
-            calories: 0,
-            draft: 0,
-            windSpeed: 0,
-            windAngle: 0,
-            slope: 0,
-            eventLapsTotal: 0,
-            eventLapsDone: 0,
-            eventDistanceTotal: 0,
-            eventDistanceDone: 0,
-            eventDistanceToNextLocation: 0,
-            eventNextLocation: 0,
-            eventPosition: 0,
-        }
-    }
-}
-
-#[derive(Debug, Deserialize, Clone)]
-#[allow(dead_code, non_snake_case)]
-pub struct TpvNearest {
-    pub name: String,
-    pub country: String,
-    pub team: String,
-    pub teamCode: String,
-    pub speed: u32,
-    pub timeGap: i32,
-    pub position: u32,
-    pub distance: u32,
-    pub isEliminated: bool,    
-}
-
-impl TpvNearest {
-    #[allow(dead_code)]
-    fn new() -> TpvNearest {
-        TpvNearest {
-            name: String::from("--"),
-            country: String::from("--"),
-            team: String::from("--"),
-            teamCode: String::from("--"),
-            speed: 0,
-            timeGap: 0,
-            position: 0,
-            distance: 0,
-            isEliminated: false,    
-        }
-    }    
-}
-
-#[derive(Debug, Deserialize, Clone)]
-#[allow(dead_code, non_snake_case)]
-pub struct TpvEvent{
-    pub name: String,
-    pub route: String,
-    pub laps: u32,
-    pub distance: u32,
-    pub height: u32,
-    pub locations: u32,
-    pub type_: String, 
-}
-
-impl TpvEvent {
-    #[allow(dead_code)]
-    fn new() -> TpvEvent {
-        TpvEvent {
-            name: String::from("--"),
-            route: String::from("--"),
-            laps: 0,
-            distance: 0,
-            height: 0,
-            locations: 0,
-            type_: String::from("--"), 
-        }
-    }    
-}
-
-#[derive(Debug, Deserialize, Clone)]
-#[allow(dead_code, non_snake_case)]
-pub struct TpvEntries {
-    pub bibNum: u32,
-    pub name: String,
-    pub country: String,
-    pub team: String,
-    pub teamCode: String,    
-}
-
-impl TpvEntries {
-    #[allow(dead_code)]
-    fn new() -> TpvEntries {
-        TpvEntries {
-            bibNum: 0,
-            name: String::from("--"),
-            country: String::from("--"),
-            team: String::from("--"),
-            teamCode: String::from("--"),  
-        }
-    }    
-}
-
-#[derive(Debug, Deserialize, Clone)]
-#[allow(dead_code, non_snake_case)]
-pub struct TpvGroups {
-    pub groupNum1: u32,
-    pub groupNum2: u32,
-    pub leader: String,
-    pub size: u32,
-    pub timeGap1: i32,
-    pub timeGap2: i32,
-    pub isPeloton: bool,
-}
-
-impl TpvGroups {
-    #[allow(dead_code)]
-    fn new() -> TpvGroups {
-        TpvGroups {
-            groupNum1: 0,
-            groupNum2: 0,
-            leader: String::from("--"),
-            size: 0,
-            timeGap1: 0,
-            timeGap2: 0,
-            isPeloton: false,
-        }
-    }
-}
-
-#[derive(Debug, Deserialize, Clone)]
-#[allow(dead_code, non_snake_case)]
-pub struct TpvResultsIndv {
-    pub location: u32,
-    pub position: u32,
-    pub name: String,
-    pub country: String,
-    pub team: String,
-    pub teamCode: String,
-    pub points: u32,
-    pub pointsTotal: u32,
-    pub time: u32,
-    pub deltaTime: i32,
-    pub isEliminated: bool,
-}
-
-impl TpvResultsIndv {
-    #[allow(dead_code)]
-    fn new() -> TpvResultsIndv {
-        TpvResultsIndv {
-            location: 0,
-            position: 0,
-            name: String::from("--"),
-            country: String::from("--"),
-            team: String::from("--"),
-            teamCode: String::from("--"),
-            points: 0,
-            pointsTotal: 0,
-            time: 0,
-            deltaTime: 0,
-            isEliminated: false,        
-        }
-    }
-}
-
-#[derive(Debug, Deserialize, Clone)]
-#[allow(dead_code, non_snake_case)]
-pub struct TpvResultsTeam {
-    pub location: u32,
-    pub position: u32,
-    pub team: String,
-    pub teamCode: String,
-    pub pointsTotal: u32,
-    pub time: f32,
-    pub deltaTime: f32,
-}
-
-impl TpvResultsTeam {
-    #[allow(dead_code)]
-    fn new() -> TpvResultsTeam {
-        TpvResultsTeam {
-            location: 0,
-            position: 0,
-            team: String::from("--"),
-            teamCode: String::from("--"),
-            pointsTotal: 0,
-            time: 0.0,
-            deltaTime: 0.0,
-        }
-    }
-}
-
-#[derive(Clone, PartialEq)]
-pub enum DataSourceStatus {
-    Unknown,
-    Ok,
-    NotOk,
-}
-
-#[derive(Clone)]
-pub struct DataSource {
-    pub started: bool,
-    pub stopped: bool,
-    pub status: DataSourceStatus,
-    pub frame: u64,
-}
-
-impl DataSource {
-    pub fn new() -> DataSource {
-        DataSource {
-            started: false,
-            stopped: true,
-            status: DataSourceStatus::Unknown,
-            frame: 0,
-        }
-    }
-}
+pub mod tpvbc;
 
 #[derive(Clone)]
 pub struct DataCollector {
     base_uri: String,
     // TPV raw 'focus' data
-    source_focus: Arc<Mutex<DataSource>>, 
-    data_focus: Arc<Mutex<TpvFocus>>,
+    source_focus: Arc<Mutex<tpvbc::BcastState>>, 
+    data_focus: Arc<Mutex<tpvbc::Focus>>,
     // TPV raw 'nearest' data
-    source_nearest: Arc<Mutex<DataSource>>, 
-    data_nearest: Arc<Mutex<Vec<TpvNearest>>>,
+    source_nearest: Arc<Mutex<tpvbc::BcastState>>, 
+    data_nearest: Arc<Mutex<Vec<tpvbc::Nearest>>>,
     // TPV raw 'event' data
-    source_event: Arc<Mutex<DataSource>>,
-    data_event: Arc<Mutex<TpvEvent>>,
+    source_event: Arc<Mutex<tpvbc::BcastState>>,
+    data_event: Arc<Mutex<tpvbc::Event>>,
     // TPV raw 'entries' data
-    source_entries: Arc<Mutex<DataSource>>,
-    data_entries: Arc<Mutex<Vec<TpvEntries>>>,
+    source_entries: Arc<Mutex<tpvbc::BcastState>>,
+    data_entries: Arc<Mutex<Vec<tpvbc::Entries>>>,
     // TPV  raw 'groups' data
-    source_groups: Arc<Mutex<DataSource>>,
-    data_groups: Arc<Mutex<Vec<TpvGroups>>>,
+    source_groups: Arc<Mutex<tpvbc::BcastState>>,
+    data_groups: Arc<Mutex<Vec<tpvbc::Groups>>>,
     // TPV  raw 'resultsIndv' data
-    source_results_indv: Arc<Mutex<DataSource>>,
-    data_results_indv: Arc<Mutex<Vec<TpvResultsIndv>>>,
+    source_results_indv: Arc<Mutex<tpvbc::BcastState>>,
+    data_results_indv: Arc<Mutex<Vec<tpvbc::ResultsIndv>>>,
     // TPV  raw 'resultsTeam' data
-    source_results_team: Arc<Mutex<DataSource>>,
-    data_results_team: Arc<Mutex<Vec<TpvResultsTeam>>>,
+    source_results_team: Arc<Mutex<tpvbc::BcastState>>,
+    data_results_team: Arc<Mutex<Vec<tpvbc::ResultsTeam>>>,
 }
 
 impl DataCollector {
     pub fn new() -> DataCollector {
         DataCollector {
             base_uri: String::from("http://localhost:8080"),
-            source_focus:  Arc::new(Mutex::new(DataSource::new())),
-            data_focus:  Arc::new(Mutex::new(TpvFocus::new())),
-            source_nearest:  Arc::new(Mutex::new(DataSource::new())),
-            data_nearest:  Arc::new(Mutex::new(vec![TpvNearest::new()])),
-            source_event:  Arc::new(Mutex::new(DataSource::new())),
-            data_event: Arc::new(Mutex::new(TpvEvent::new())),
-            source_entries:  Arc::new(Mutex::new(DataSource::new())),
-            data_entries: Arc::new(Mutex::new(vec![TpvEntries::new()])),
-            source_groups:  Arc::new(Mutex::new(DataSource::new())),
-            data_groups: Arc::new(Mutex::new(vec![TpvGroups::new()])),
-            source_results_indv:  Arc::new(Mutex::new(DataSource::new())),
-            data_results_indv: Arc::new(Mutex::new(vec![TpvResultsIndv::new()])),
-            source_results_team:  Arc::new(Mutex::new(DataSource::new())),
-            data_results_team: Arc::new(Mutex::new(vec![TpvResultsTeam::new()])),
+            source_focus:  Arc::new(Mutex::new(tpvbc::BcastState::new())),
+            data_focus:  Arc::new(Mutex::new(tpvbc::Focus::new())),
+            source_nearest:  Arc::new(Mutex::new(tpvbc::BcastState::new())),
+            data_nearest:  Arc::new(Mutex::new(vec![tpvbc::Nearest::new()])),
+            source_event:  Arc::new(Mutex::new(tpvbc::BcastState::new())),
+            data_event: Arc::new(Mutex::new(tpvbc::Event::new())),
+            source_entries:  Arc::new(Mutex::new(tpvbc::BcastState::new())),
+            data_entries: Arc::new(Mutex::new(vec![tpvbc::Entries::new()])),
+            source_groups:  Arc::new(Mutex::new(tpvbc::BcastState::new())),
+            data_groups: Arc::new(Mutex::new(vec![tpvbc::Groups::new()])),
+            source_results_indv:  Arc::new(Mutex::new(tpvbc::BcastState::new())),
+            data_results_indv: Arc::new(Mutex::new(vec![tpvbc::ResultsIndv::new()])),
+            source_results_team:  Arc::new(Mutex::new(tpvbc::BcastState::new())),
+            data_results_team: Arc::new(Mutex::new(vec![tpvbc::ResultsTeam::new()])),
         }
     }
 
@@ -341,10 +72,10 @@ impl DataCollector {
                 if last_status != 200 {
                     log::warn!("Failed to retrive 'focus' data");
                     // failed to get the data
-                    update_source_status(&source, DataSourceStatus::NotOk);
+                    update_source_status(&source, tpvbc::BcastStatus::NotOk);
                     thread::sleep(time::Duration::from_millis(1000));
                 } else {
-                    let mut focus_list: Vec<TpvFocus> = Vec::new();
+                    let mut focus_list: Vec<tpvbc::Focus> = Vec::new();
 
                     match serde_json::from_str(&last_body.as_str()) {
                         Ok(obj) => focus_list = obj,
@@ -354,7 +85,7 @@ impl DataCollector {
                     log::info!("'focus' json:\n{focus_list:#?}");
 
                     // all good, we got some data
-                    update_source_status(&source, DataSourceStatus::Ok);
+                    update_source_status(&source, tpvbc::BcastStatus::Ok);
                     {
                         let mut focus_locked = focus.lock().unwrap();
 
@@ -368,7 +99,7 @@ impl DataCollector {
             }
             log::info!("DataCollector thread for 'focus' stopped");
             set_source_started(&source, false);
-            update_source_status(&source, DataSourceStatus::Unknown);
+            update_source_status(&source, tpvbc::BcastStatus::Unknown);
         });
     }
 
@@ -395,10 +126,10 @@ impl DataCollector {
                 if last_status != 200 {
                     log::warn!("Failed to retrive 'nearest' data");
                     // failed to get the data
-                    update_source_status(&source, DataSourceStatus::NotOk);
+                    update_source_status(&source, tpvbc::BcastStatus::NotOk);
                     thread::sleep(time::Duration::from_millis(1000));
                 } else {
-                    let mut nearest_list: Vec<TpvNearest> = Vec::new();
+                    let mut nearest_list: Vec<tpvbc::Nearest> = Vec::new();
 
                     match serde_json::from_str(&last_body.as_str()) {
                         Ok(obj) => nearest_list = obj,
@@ -408,7 +139,7 @@ impl DataCollector {
                     log::info!("'nearest' json:\n{nearest_list:#?}");
 
                     // all good, we got some data
-                    update_source_status(&source, DataSourceStatus::Ok);
+                    update_source_status(&source, tpvbc::BcastStatus::Ok);
                     {
                         let mut nearest_locked = focus.lock().unwrap();
                         *nearest_locked = nearest_list;
@@ -418,7 +149,7 @@ impl DataCollector {
             }
             log::info!("DataCollector thread for 'nearest' stopped");
             set_source_started(&source, false);
-            update_source_status(&source, DataSourceStatus::Unknown);
+            update_source_status(&source, tpvbc::BcastStatus::Unknown);
         });
     }
 
@@ -445,14 +176,14 @@ impl DataCollector {
                 if last_status != 200 {
                     // failed to get the data
                     log::warn!("Failed to retrive 'event' data");
-                    update_source_status(&source, DataSourceStatus::NotOk);
+                    update_source_status(&source, tpvbc::BcastStatus::NotOk);
                     thread::sleep(time::Duration::from_millis(1000));
                 } else {
                     // 'type' is a reserved RUST keyword. Thus we can not have a field named 'type'
                     // in the struct for the 'serde' bindings. So what we do here is to change
                     // 'type' to 'type_' in the received body:
                     let last_body = last_body.replace("\"type\":", "\"type_\":");
-                    let mut event_list: Vec<TpvEvent> = Vec::new();
+                    let mut event_list: Vec<tpvbc::Event> = Vec::new();
 
                     match serde_json::from_str(&last_body.as_str()) {
                         Ok(obj) => event_list = obj,
@@ -462,7 +193,7 @@ impl DataCollector {
                     log::info!("'event' json:\n{event_list:#?}");
 
                     // all good, we got some data
-                    update_source_status(&source, DataSourceStatus::Ok);
+                    update_source_status(&source, tpvbc::BcastStatus::Ok);
                     {
                         let mut event_locked = event.lock().unwrap();
 
@@ -476,7 +207,7 @@ impl DataCollector {
             }
             log::info!("DataCollector thread for 'event' stopped");
             set_source_started(&source, false);
-            update_source_status(&source, DataSourceStatus::Unknown);            
+            update_source_status(&source, tpvbc::BcastStatus::Unknown);            
         });
     }
 
@@ -503,10 +234,10 @@ impl DataCollector {
                 if last_status != 200 {
                     log::warn!("Failed to retrive 'entries' data");
                     // failed to get the data
-                    update_source_status(&source, DataSourceStatus::NotOk);
+                    update_source_status(&source, tpvbc::BcastStatus::NotOk);
                     thread::sleep(time::Duration::from_millis(1000));
                 } else {
-                    let mut entries_list: Vec<TpvEntries> = Vec::new();
+                    let mut entries_list: Vec<tpvbc::Entries> = Vec::new();
 
                     match serde_json::from_str(&last_body.as_str()) {
                         Ok(obj) => entries_list = obj,
@@ -516,7 +247,7 @@ impl DataCollector {
                     log::info!("'entries' json:\n{entries_list:#?}");
 
                     // all good, we got some data
-                    update_source_status(&source, DataSourceStatus::Ok);
+                    update_source_status(&source, tpvbc::BcastStatus::Ok);
                     {
                         let mut entries_locked = focus.lock().unwrap();
                         *entries_locked = entries_list;
@@ -526,7 +257,7 @@ impl DataCollector {
             }
             log::info!("DataCollector thread for 'entries' stopped");
             set_source_started(&source, false);
-            update_source_status(&source, DataSourceStatus::Unknown);            
+            update_source_status(&source, tpvbc::BcastStatus::Unknown);            
         });
     }
 
@@ -553,11 +284,11 @@ impl DataCollector {
                 if last_status != 200 {
                     log::warn!("Failed to retrive 'groups' data");
                     // failed to get the data
-                    update_source_status(&source, DataSourceStatus::NotOk);
+                    update_source_status(&source, tpvbc::BcastStatus::NotOk);
                     thread::sleep(time::Duration::from_millis(1000));
                 } else {
                     let last_body = last_body.replace(": null,", ": \"\",");
-                    let mut groups_list: Vec<TpvGroups> = Vec::new();
+                    let mut groups_list: Vec<tpvbc::Groups> = Vec::new();
 
                     match serde_json::from_str(&last_body.as_str()) {
                         Ok(obj) => groups_list = obj,
@@ -567,7 +298,7 @@ impl DataCollector {
                     log::info!("'groups' json:\n{groups_list:#?}");
 
                     // all good, we got some data
-                    update_source_status(&source, DataSourceStatus::Ok);
+                    update_source_status(&source, tpvbc::BcastStatus::Ok);
                     {
                         let mut groups_locked = focus.lock().unwrap();
                         *groups_locked = groups_list;
@@ -577,7 +308,7 @@ impl DataCollector {
             }
             log::info!("DataCollector thread for 'groups' stopped");
             set_source_started(&source, false);
-            update_source_status(&source, DataSourceStatus::Unknown);
+            update_source_status(&source, tpvbc::BcastStatus::Unknown);
         });
     }
 
@@ -604,10 +335,10 @@ impl DataCollector {
                 if last_status != 200 {
                     log::warn!("Failed to retrive 'results_indv' data");
                     // failed to get the data
-                    update_source_status(&source, DataSourceStatus::NotOk);
+                    update_source_status(&source, tpvbc::BcastStatus::NotOk);
                     thread::sleep(time::Duration::from_millis(1000));
                 } else {
-                    let mut results_indv_list: Vec<TpvResultsIndv> = Vec::new();
+                    let mut results_indv_list: Vec<tpvbc::ResultsIndv> = Vec::new();
 
                     match serde_json::from_str(&last_body.as_str()) {
                         Ok(obj) => results_indv_list = obj,
@@ -617,7 +348,7 @@ impl DataCollector {
                     log::info!("'results_indv' json:\n{results_indv_list:#?}");
 
                     // all good, we got some data
-                    update_source_status(&source, DataSourceStatus::Ok);
+                    update_source_status(&source, tpvbc::BcastStatus::Ok);
                     {
                         let mut results_indv_locked = focus.lock().unwrap();
                         *results_indv_locked = results_indv_list;
@@ -627,7 +358,7 @@ impl DataCollector {
             }
             log::info!("DataCollector thread for 'results_indv' stopped");
             set_source_started(&source, false);
-            update_source_status(&source, DataSourceStatus::Unknown);
+            update_source_status(&source, tpvbc::BcastStatus::Unknown);
         });
     }
 
@@ -654,10 +385,10 @@ impl DataCollector {
                 if last_status != 200 {
                     log::warn!("Failed to retrive 'results_team' data");
                     // failed to get the data
-                    update_source_status(&source, DataSourceStatus::NotOk);
+                    update_source_status(&source, tpvbc::BcastStatus::NotOk);
                     thread::sleep(time::Duration::from_millis(1000));
                 } else {
-                    let mut results_team_list: Vec<TpvResultsTeam> = Vec::new();
+                    let mut results_team_list: Vec<tpvbc::ResultsTeam> = Vec::new();
 
                     match serde_json::from_str(&last_body.as_str()) {
                         Ok(obj) => results_team_list = obj,
@@ -667,7 +398,7 @@ impl DataCollector {
                     log::info!("'results_team' json:\n{results_team_list:#?}");
 
                     // all good, we got some data
-                    update_source_status(&source, DataSourceStatus::Ok);
+                    update_source_status(&source, tpvbc::BcastStatus::Ok);
                     {
                         let mut results_team_locked = focus.lock().unwrap();
                         *results_team_locked = results_team_list;
@@ -677,7 +408,7 @@ impl DataCollector {
             }
             log::info!("DataCollector thread for 'results_team' stopped");
             set_source_started(&source, false);
-            update_source_status(&source, DataSourceStatus::Unknown);
+            update_source_status(&source, tpvbc::BcastStatus::Unknown);
         });
     }
 
@@ -775,59 +506,59 @@ impl DataCollector {
         true
     }
 
-    pub fn get_source_focus(&self) -> DataSource {
+    pub fn get_source_focus(&self) -> tpvbc::BcastState {
         self.source_focus.lock().unwrap().clone()
     }
 
-    pub fn get_source_nearest(&self) -> DataSource {
+    pub fn get_source_nearest(&self) -> tpvbc::BcastState {
         self.source_nearest.lock().unwrap().clone()
     }
 
-    pub fn get_source_event(&self) -> DataSource {
+    pub fn get_source_event(&self) -> tpvbc::BcastState {
         self.source_event.lock().unwrap().clone()
     }
 
-    pub fn get_source_entries(&self) -> DataSource {
+    pub fn get_source_entries(&self) -> tpvbc::BcastState {
         self.source_entries.lock().unwrap().clone()
     }
 
-    pub fn get_source_groups(&self) -> DataSource {
+    pub fn get_source_groups(&self) -> tpvbc::BcastState {
         self.source_groups.lock().unwrap().clone()
     }
 
-    pub fn get_source_results_indv(&self) -> DataSource {
+    pub fn get_source_results_indv(&self) -> tpvbc::BcastState {
         self.source_results_indv.lock().unwrap().clone()
     }
 
-    pub fn get_source_results_team(&self) -> DataSource {
+    pub fn get_source_results_team(&self) -> tpvbc::BcastState {
         self.source_results_team.lock().unwrap().clone()
     }
 
-    pub fn get_focus(&self) -> TpvFocus {
+    pub fn get_focus(&self) -> tpvbc::Focus {
          self.data_focus.lock().unwrap().clone()
     }
 
-    pub fn get_nearest(&self) -> Vec<TpvNearest> {
+    pub fn get_nearest(&self) -> Vec<tpvbc::Nearest> {
         self.data_nearest.lock().unwrap().clone()
     }
 
-    pub fn get_event(&self) -> TpvEvent {
+    pub fn get_event(&self) -> tpvbc::Event {
         self.data_event.lock().unwrap().clone()
     }
 
-    pub fn get_entries(&self) -> Vec<TpvEntries> {
+    pub fn get_entries(&self) -> Vec<tpvbc::Entries> {
         self.data_entries.lock().unwrap().clone()
     }
 
-    pub fn get_groups(&self) -> Vec<TpvGroups> {
+    pub fn get_groups(&self) -> Vec<tpvbc::Groups> {
         self.data_groups.lock().unwrap().clone()
     }
 
-    pub fn get_results_indv(&self) -> Vec<TpvResultsIndv> {
+    pub fn get_results_indv(&self) -> Vec<tpvbc::ResultsIndv> {
         self.data_results_indv.lock().unwrap().clone()
     }
 
-    pub fn get_results_team(&self) -> Vec<TpvResultsTeam> {
+    pub fn get_results_team(&self) -> Vec<tpvbc::ResultsTeam> {
         self.data_results_team.lock().unwrap().clone()
     }
 
@@ -836,23 +567,23 @@ impl DataCollector {
     }
 }
 
-fn update_source_status(source: &Arc<Mutex<DataSource>>, s: DataSourceStatus) {
+fn update_source_status(source: &Arc<Mutex<tpvbc::BcastState>>, s: tpvbc::BcastStatus) {
     let mut source_locked = source.lock().unwrap();
    
-    if s == DataSourceStatus::Ok {
+    if s == tpvbc::BcastStatus::Ok {
         source_locked.frame += 1;
     }
    
     source_locked.status = s;
 }
 
-fn set_source_started(source: &Arc<Mutex<DataSource>>, started: bool) {
+fn set_source_started(source: &Arc<Mutex<tpvbc::BcastState>>, started: bool) {
     let mut source_locked = source.lock().unwrap();
     source_locked.started = started;
     source_locked.stopped = !started;
 }
 
-fn is_source_started(source: &Arc<Mutex<DataSource>>) -> bool {
+fn is_source_started(source: &Arc<Mutex<tpvbc::BcastState>>) -> bool {
     let source_locked = source.lock().unwrap();
     source_locked.started 
 }
@@ -891,3 +622,52 @@ fn get_data_http(status: &Arc<Mutex<u16>>, body: &Arc<Mutex<String>>, url: &str)
     (last_status, last_body)
 }
 
+pub struct Facade {
+    tpv: tpvbc::http::BcastStream,
+}
+
+impl Facade {
+    pub fn new() -> Facade {
+        Facade {
+            tpv: tpvbc::http::BcastStream::new(),
+        }
+    }
+
+    pub fn start(&self) {
+        log::info!("Facade::start");
+        self.tpv.start();
+    }
+
+    pub fn stop(&self) {
+        log::info!("Facade::stop");
+        self.tpv.stop();
+    }
+
+    pub fn running(&self) -> bool {
+        self.tpv.running()
+    }
+
+    pub fn tpv_focus_data(&self) -> tpvbc::Focus {
+        self.tpv.focus.stream.data().clone()
+    }
+
+    pub fn tpv_focus_state(&self) -> tpvbc::BcastState {
+        self.tpv.focus.stream.state().clone()
+    }
+
+    pub fn tpv_nearest_data(&self) -> Vec<tpvbc::Nearest> {
+        self.tpv.nearest.stream.data().clone()
+    }
+
+    pub fn tpv_nearest_state(&self) -> tpvbc::BcastState {
+        self.tpv.nearest.stream.state().clone()
+    }
+
+    pub fn tpv_event_data(&self) -> tpvbc::Event {
+        self.tpv.event.stream.data().clone()
+    }
+
+    pub fn tpv_event_state(&self) -> tpvbc::BcastState {
+        self.tpv.event.stream.state().clone()
+    }
+}

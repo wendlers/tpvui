@@ -1,5 +1,4 @@
 use crate::data::DataCollector;
-
 use super::base::WidgetBase;
 
 #[derive(serde::Deserialize, serde::Serialize)]

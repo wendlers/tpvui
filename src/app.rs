@@ -2,7 +2,7 @@ use core::time;
 use base::WidgetBase;
 use egui::Color32;
 
-use crate::data::{DataCollector, DataSource, DataSourceStatus};
+use crate::data::{Facade, DataCollector, tpvbc::BcastState, tpvbc::BcastStatus};
 
 mod base;
 mod focus;
@@ -31,6 +31,10 @@ pub struct TpvUiApp {
 
     #[serde(skip)]
     dc: DataCollector,
+
+    #[serde(skip)]
+    df: Facade,
+
 }
 
 impl Default for TpvUiApp {
@@ -45,6 +49,7 @@ impl Default for TpvUiApp {
             widget_results_team: results_team::Widget::new(),
             widget_settings_source: setings_source::Widget::new(),
             dc: DataCollector::new(),
+            df: Facade::new(),
         }
     }
 }
@@ -61,14 +66,14 @@ impl TpvUiApp {
         Default::default()
     }
     
-    fn data_source_status(&self, ui: &mut egui::Ui, ds: &DataSource, label: &str, ) {
+    fn data_source_status(&self, ui: &mut egui::Ui, ds: &BcastState, label: &str, ) {
         let mut status = String::from(label);
         let mut color = Color32::GREEN;
 
-        if ds.status == DataSourceStatus::Unknown {
+        if ds.status == BcastStatus::Unknown {
             status.push_str(" X ");
             color = Color32::GRAY;
-        } else if ds.status == DataSourceStatus::NotOk {
+        } else if ds.status == BcastStatus::NotOk {
                 status.push_str(" ⚠ ");
                 color = Color32::RED;
         } else {
@@ -106,14 +111,17 @@ impl TpvUiApp {
                             self.widget_settings_source.visible = !self.widget_settings_source.visible; 
                         }
                         ui.separator();
-                        if self.dc.is_running() {
+                        // if self.dc.is_running() {
+                        if self.df.running() {
                             if ui.button("Stop receiving").clicked() {
-                                self.dc.stop();
+                                // self.dc.stop();
+                                self.df.stop();
                             }                            
                         } else {
                             if ui.button("Start receiving").clicked() {
                                 self.dc.set_base_uri(self.widget_settings_source.url.clone());
-                                self.dc.start();
+                                // self.dc.start();
+                                self.df.start();
                             }    
                         }
                     });
@@ -134,7 +142,6 @@ impl TpvUiApp {
         egui::SidePanel::left("widget_panel").show(ctx, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
                 ui.with_layout(egui::Layout::top_down_justified(egui::Align::LEFT), |ui| {
-                    self.widged_focus.show_label(ui); 
                     self.widged_focus.show_label(ui);
                     self.widget_nearest.show_label(ui);
                     self.widget_event.show_label(ui);
@@ -160,7 +167,7 @@ impl TpvUiApp {
                         ui.add(egui::Separator::default().vertical());
                     }
 
-                    if self.dc.is_running() {
+                    if self.df.running() {
                         ui.label(
                             egui::RichText::new("★ Started")
                                     .color(Color32::GREEN)
@@ -173,9 +180,9 @@ impl TpvUiApp {
                     }
                     ui.add(egui::Separator::default().vertical());
 
-                    self.data_source_status(ui, &self.dc.get_source_focus(), "focus");
-                    self.data_source_status(ui, &self.dc.get_source_nearest(), "nearest");
-                    self.data_source_status(ui, &self.dc.get_source_event(), "event");
+                    self.data_source_status(ui, &self.df.tpv_focus_state(), "focus");
+                    self.data_source_status(ui, &self.df.tpv_nearest_state(), "nearest");
+                    self.data_source_status(ui, &self.df.tpv_event_state(), "event");
                     self.data_source_status(ui, &self.dc.get_source_entries(), "entries");
                     self.data_source_status(ui, &self.dc.get_source_groups(), "groups");
                     self.data_source_status(ui, &self.dc.get_source_results_indv(), "resultsIndv");
@@ -193,11 +200,21 @@ impl TpvUiApp {
         }          
     }
 
+    fn window_show_hide_v2(ctx: &egui::Context, wdg: &impl WidgetBase, df: &Facade) {
+        if wdg.is_visible() {            
+            egui::Window::new(wdg.get_title()).show(ctx, |ui| {
+                wdg.show_window_v2(ui, df);
+            });
+        }          
+    }
+
     fn widget_windows(&mut self, ctx: &egui::Context) {
-        TpvUiApp::window_show_hide(ctx, &self.widged_focus, &self.dc); 
-        TpvUiApp::window_show_hide(ctx, &self.widged_focus, &self.dc);
-        TpvUiApp::window_show_hide(ctx, &self.widget_nearest, &self.dc); 
-        TpvUiApp::window_show_hide(ctx, &self.widget_event, &self.dc); 
+        TpvUiApp::window_show_hide_v2(ctx, &self.widged_focus, &self.df); 
+        // TpvUiApp::window_show_hide(ctx, &self.widged_focus, &self.dc);
+        TpvUiApp::window_show_hide_v2(ctx, &self.widget_nearest, &self.df);
+        // TpvUiApp::window_show_hide(ctx, &self.widget_nearest, &self.dc); 
+        TpvUiApp::window_show_hide_v2(ctx, &self.widget_event, &self.df); 
+        // TpvUiApp::window_show_hide(ctx, &self.widget_event, &self.dc); 
         TpvUiApp::window_show_hide(ctx, &self.widget_entries, &self.dc); 
         TpvUiApp::window_show_hide(ctx, &self.widget_groups, &self.dc); 
         TpvUiApp::window_show_hide(ctx, &self.widget_results_indv, &self.dc); 
