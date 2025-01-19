@@ -670,4 +670,36 @@ impl Facade {
     pub fn tpv_event_state(&self) -> tpvbc::BcastState {
         self.tpv.event.stream.state().clone()
     }
+
+    pub fn tpv_entries_data(&self) -> Vec<tpvbc::Entries> {
+        self.tpv.entries.stream.data().clone()
+    }
+
+    pub fn tpv_entries_state(&self) -> tpvbc::BcastState {
+        self.tpv.entries.stream.state().clone()
+    }
+
+    pub fn tpv_groups_data(&self) -> Vec<tpvbc::Groups> {
+        self.tpv.groups.stream.data().clone()
+    }
+
+    pub fn tpv_groups_state(&self) -> tpvbc::BcastState {
+        self.tpv.groups.stream.state().clone()
+    }
+
+    pub fn tpv_results_indv_data(&self) -> Vec<tpvbc::ResultsIndv> {
+        self.tpv.results_indv.stream.data().clone()
+    }
+
+    pub fn tpv_results_indv_state(&self) -> tpvbc::BcastState {
+        self.tpv.results_indv.stream.state().clone()
+    }
+
+    pub fn tpv_results_team_data(&self) -> Vec<tpvbc::ResultsTeam> {
+        self.tpv.results_team.stream.data().clone()
+    }
+
+    pub fn tpv_results_team_state(&self) -> tpvbc::BcastState {
+        self.tpv.results_team.stream.state().clone()
+    }
 }

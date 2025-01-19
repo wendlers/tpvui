@@ -1,4 +1,4 @@
-use crate::data::DataCollector;
+use crate::data::{DataCollector, Facade};
 
 use super::base::WidgetBase;
 
@@ -27,6 +27,36 @@ impl WidgetBase for Widget {
             egui::ScrollArea::vertical().show(ui, |ui| {
                 egui::Grid::new("groups_data_grid").show(ui, |ui| {
                     for g in groups.iter() {
+                        self.key_value_simple(ui, "Group #1", format!("{}", g.groupNum1), "");
+                        self.key_value_simple(ui, "Group #2", format!("{}", g.groupNum2), "");
+                        ui.end_row();
+
+                        self.key_value_simple(ui, "Time gap #1", format!("{}", g.timeGap1), "s");
+                        self.key_value_simple(ui, "Time gap #2", format!("{}", g.timeGap2), "s");
+                        ui.end_row();
+
+                        self.key_value_simple(ui, "Size", format!("{}", g.size), "");
+                        self.key_value_simple(ui, "Peleton", format!("{}", g.isPeloton), "");
+                        ui.end_row();
+
+                        ui.label("");
+                        ui.end_row();
+                    }
+                });
+            });
+        });
+    }
+
+    fn show_window_v2(&self, ui: &mut egui::Ui, df: &Facade) {
+        let groups = df.tpv_groups_data();
+
+        egui::ScrollArea::horizontal().show(ui, |ui| {
+            egui::ScrollArea::vertical().show(ui, |ui| {
+                egui::Grid::new("groups_data_grid").show(ui, |ui| {
+                    for g in groups.iter() {
+                        self.key_value_simple(ui, "Leader", format!("{}", g.leader), "");
+                        ui.end_row();
+
                         self.key_value_simple(ui, "Group #1", format!("{}", g.groupNum1), "");
                         self.key_value_simple(ui, "Group #2", format!("{}", g.groupNum2), "");
                         ui.end_row();

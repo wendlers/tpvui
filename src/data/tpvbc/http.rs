@@ -1,5 +1,23 @@
 use std::{sync::{Arc, Mutex}, thread, time};
-use super::{BcastStatus, BcastStreamBase, BcastStreamEvent, BcastStreamFocus, BcastStreamNearest, Focus, Nearest, Event};
+
+use super::{
+    BcastStatus, 
+    BcastStreamBase, 
+    BcastStreamEvent, 
+    BcastStreamFocus,
+    BcastStreamNearest,
+    BcastStreamEntries, 
+    BcastStreamGroups,
+    BcastStreamResultsIndv,
+    BcastStreamResultsTeam,
+    Focus, 
+    Nearest, 
+    Event, 
+    Entries,
+    Groups,
+    ResultsIndv,
+    ResultsTeam,
+};
 
 fn http_get_blocking(status: &Arc<Mutex<u16>>, body: &Arc<Mutex<String>>, url: &str) -> (u16, String) {
     let status_clone = Arc::clone(&status);
@@ -192,7 +210,7 @@ impl BcastStreamNearestWorker {
                         let mut nearest_locked = nearest.lock().unwrap();
                         *nearest_locked = nearest_list;
                     }
-                    thread::sleep(time::Duration::from_millis(250));
+                    thread::sleep(time::Duration::from_millis(1000));
                 }           
             }
             log::info!("Worker thread for 'nearest' stopped");
@@ -292,10 +310,344 @@ impl BcastStreamEventWorker {
     }
 }
 
+pub struct BcastStreamEntriesWorker {
+    pub stream: BcastStreamEntries,
+    pub url: String,
+}
+
+impl BcastStreamEntriesWorker {
+    pub fn new() -> BcastStreamEntriesWorker {
+        BcastStreamEntriesWorker {
+            stream: BcastStreamEntries::new(),
+            url: String::from("http://localhost:8080/bcast/entries"),
+        }
+    }
+
+    pub fn start(&self) {
+        if self.stream.stopped() && !self.stream.started() {
+            log::info!("BcastStreamEntriesWorker::start");
+            self.collect();
+        }
+    }
+
+    pub fn stop(&self) {
+        if !self.stream.stopped() && self.stream.started() {
+            log::info!("BcastStreamEntriesWorker::stop");
+            self.stream.set_started(false);
+        }
+    }
+
+    pub fn running(&self) -> bool {
+        self.stream.started()
+    }
+
+    fn collect(&self) {
+        let source = Arc::clone(&self.stream.state);
+        let entries = Arc::clone(&self.stream.data);
+        let url = self.url.clone();
+
+        thread::spawn(move || {
+            <BcastStreamEntries as BcastStreamBase>::set_started_t(&source, true);
+
+            log::info!("Worker thread for 'entries' started");
+
+            let status:Arc<Mutex<u16>>  = Arc::new(Mutex::new(0));
+            let body:Arc<Mutex<String>>  = Arc::new(Mutex::new(String::new()));
+
+            loop {
+                if !<BcastStreamEntries as BcastStreamBase>::started_t(&source) {
+                    break;
+                }
+                let (last_status, last_body) = http_get_blocking(&status, &body, url.as_str());
+
+                if last_status != 200 {
+                    log::warn!("Failed to retrive 'entries' data");
+                    // failed to get the data
+                    <BcastStreamEntries as BcastStreamBase>::update_state_t(&source, BcastStatus::NotOk);
+                    thread::sleep(time::Duration::from_millis(1000));
+                } else {
+                    let mut entries_list: Vec<Entries> = Vec::new();
+
+                    match serde_json::from_str(&last_body.as_str()) {
+                        Ok(obj) => entries_list = obj,
+                        Err(_) => () 
+                    }
+                    
+                    log::info!("'entries' json:\n{entries_list:#?}");
+
+                    // all good, we got some data
+                    <BcastStreamEntries as BcastStreamBase>::update_state_t(&source, BcastStatus::Ok);
+                    {
+                        let mut entries_locked = entries.lock().unwrap();
+                        *entries_locked = entries_list;
+                    }
+                    thread::sleep(time::Duration::from_millis(1000));
+                }           
+            }
+            log::info!("Worker thread for 'entries' stopped");
+            <BcastStreamEntries as BcastStreamBase>::set_started_t(&source, false);
+            <BcastStreamEntries as BcastStreamBase>::update_state_t(&source, BcastStatus::Unknown);
+        });
+    }
+}
+
+pub struct BcastStreamGroupsWorker {
+    pub stream: BcastStreamGroups,
+    pub url: String,
+}
+
+impl BcastStreamGroupsWorker {
+    pub fn new() -> BcastStreamGroupsWorker {
+        BcastStreamGroupsWorker {
+            stream: BcastStreamGroups::new(),
+            url: String::from("http://localhost:8080/bcast/groups"),
+        }
+    }
+
+    pub fn start(&self) {
+        if self.stream.stopped() && !self.stream.started() {
+            log::info!("BcastStreamGroupsWorker::start");
+            self.collect();
+        }
+    }
+
+    pub fn stop(&self) {
+        if !self.stream.stopped() && self.stream.started() {
+            log::info!("BcastStreamGroupsWorker::stop");
+            self.stream.set_started(false);
+        }
+    }
+
+    pub fn running(&self) -> bool {
+        self.stream.started()
+    }
+
+    fn collect(&self) {
+        let source = Arc::clone(&self.stream.state);
+        let groups = Arc::clone(&self.stream.data);
+        let url = self.url.clone();
+
+        thread::spawn(move || {
+            <BcastStreamGroups as BcastStreamBase>::set_started_t(&source, true);
+
+            log::info!("Worker thread for 'groups' started");
+
+            let status:Arc<Mutex<u16>>  = Arc::new(Mutex::new(0));
+            let body:Arc<Mutex<String>>  = Arc::new(Mutex::new(String::new()));
+
+            loop {
+                if !<BcastStreamGroups as BcastStreamBase>::started_t(&source) {
+                    break;
+                }
+                let (last_status, last_body) = http_get_blocking(&status, &body, url.as_str());
+
+                if last_status != 200 {
+                    log::warn!("Failed to retrive 'groups' data");
+                    // failed to get the data
+                    <BcastStreamGroups as BcastStreamBase>::update_state_t(&source, BcastStatus::NotOk);
+                    thread::sleep(time::Duration::from_millis(1000));
+                } else {
+                    // deal with null value
+                    let last_body = last_body.replace(": null,", ": \"\",");
+                    let mut groups_list: Vec<Groups> = Vec::new();
+
+                    match serde_json::from_str(&last_body.as_str()) {
+                        Ok(obj) => groups_list = obj,
+                        Err(_) => () 
+                    }
+                    
+                    log::info!("'groups' json:\n{groups_list:#?}");
+
+                    // all good, we got some data
+                    <BcastStreamGroups as BcastStreamBase>::update_state_t(&source, BcastStatus::Ok);
+                    {
+                        let mut groups_locked = groups.lock().unwrap();
+                        *groups_locked = groups_list;
+                    }
+                    thread::sleep(time::Duration::from_millis(1000));
+                }           
+            }
+            log::info!("Worker thread for 'groups' stopped");
+            <BcastStreamGroups as BcastStreamBase>::set_started_t(&source, false);
+            <BcastStreamGroups as BcastStreamBase>::update_state_t(&source, BcastStatus::Unknown);
+        });
+    }
+}
+
+pub struct BcastStreamResultsIndvWorker {
+    pub stream: BcastStreamResultsIndv,
+    pub url: String,
+}
+
+impl BcastStreamResultsIndvWorker {
+    pub fn new() -> BcastStreamResultsIndvWorker {
+        BcastStreamResultsIndvWorker {
+            stream: BcastStreamResultsIndv::new(),
+            url: String::from("http://localhost:8080/bcast/resultsIndv"),
+        }
+    }
+
+    pub fn start(&self) {
+        if self.stream.stopped() && !self.stream.started() {
+            log::info!("BcastStreamResultsIndvWorker::start");
+            self.collect();
+        }
+    }
+
+    pub fn stop(&self) {
+        if !self.stream.stopped() && self.stream.started() {
+            log::info!("BcastStreamResultsIndvWorker::stop");
+            self.stream.set_started(false);
+        }
+    }
+
+    pub fn running(&self) -> bool {
+        self.stream.started()
+    }
+
+    fn collect(&self) {
+        let source = Arc::clone(&self.stream.state);
+        let results_indv = Arc::clone(&self.stream.data);
+        let url = self.url.clone();
+
+        thread::spawn(move || {
+            <BcastStreamResultsIndv as BcastStreamBase>::set_started_t(&source, true);
+
+            log::info!("Worker thread for 'results_indv' started");
+
+            let status:Arc<Mutex<u16>>  = Arc::new(Mutex::new(0));
+            let body:Arc<Mutex<String>>  = Arc::new(Mutex::new(String::new()));
+
+            loop {
+                if !<BcastStreamResultsIndv as BcastStreamBase>::started_t(&source) {
+                    break;
+                }
+                let (last_status, last_body) = http_get_blocking(&status, &body, url.as_str());
+
+                if last_status != 200 {
+                    log::warn!("Failed to retrive 'results_indv' data");
+                    // failed to get the data
+                    <BcastStreamResultsIndv as BcastStreamBase>::update_state_t(&source, BcastStatus::NotOk);
+                    thread::sleep(time::Duration::from_millis(1000));
+                } else {
+                    // deal with null value
+                    let last_body = last_body.replace(": null,", ": \"\",");
+                    let mut results_indv_list: Vec<ResultsIndv> = Vec::new();
+
+                    match serde_json::from_str(&last_body.as_str()) {
+                        Ok(obj) => results_indv_list = obj,
+                        Err(_) => () 
+                    }
+                    
+                    log::info!("'results_indv' json:\n{results_indv_list:#?}");
+
+                    // all good, we got some data
+                    <BcastStreamResultsIndv as BcastStreamBase>::update_state_t(&source, BcastStatus::Ok);
+                    {
+                        let mut results_indv_locked = results_indv.lock().unwrap();
+                        *results_indv_locked = results_indv_list;
+                    }
+                    thread::sleep(time::Duration::from_millis(1000));
+                }           
+            }
+            log::info!("Worker thread for 'results_indv' stopped");
+            <BcastStreamResultsIndv as BcastStreamBase>::set_started_t(&source, false);
+            <BcastStreamResultsIndv as BcastStreamBase>::update_state_t(&source, BcastStatus::Unknown);
+        });
+    }
+}
+
+pub struct BcastStreamResultsTeamWorker {
+    pub stream: BcastStreamResultsTeam,
+    pub url: String,
+}
+
+impl BcastStreamResultsTeamWorker {
+    pub fn new() -> BcastStreamResultsTeamWorker {
+        BcastStreamResultsTeamWorker {
+            stream: BcastStreamResultsTeam::new(),
+            url: String::from("http://localhost:8080/bcast/resultsTeam"),
+        }
+    }
+
+    pub fn start(&self) {
+        if self.stream.stopped() && !self.stream.started() {
+            log::info!("BcastStreamResultsTeamWorker::start");
+            self.collect();
+        }
+    }
+
+    pub fn stop(&self) {
+        if !self.stream.stopped() && self.stream.started() {
+            log::info!("BcastStreamResultsTeamWorker::stop");
+            self.stream.set_started(false);
+        }
+    }
+
+    pub fn running(&self) -> bool {
+        self.stream.started()
+    }
+
+    fn collect(&self) {
+        let source = Arc::clone(&self.stream.state);
+        let results_team = Arc::clone(&self.stream.data);
+        let url = self.url.clone();
+
+        thread::spawn(move || {
+            <BcastStreamResultsTeam as BcastStreamBase>::set_started_t(&source, true);
+
+            log::info!("Worker thread for 'results_team' started");
+
+            let status:Arc<Mutex<u16>>  = Arc::new(Mutex::new(0));
+            let body:Arc<Mutex<String>>  = Arc::new(Mutex::new(String::new()));
+
+            loop {
+                if !<BcastStreamResultsTeam as BcastStreamBase>::started_t(&source) {
+                    break;
+                }
+                let (last_status, last_body) = http_get_blocking(&status, &body, url.as_str());
+
+                if last_status != 200 {
+                    log::warn!("Failed to retrive 'results_team' data");
+                    // failed to get the data
+                    <BcastStreamResultsTeam as BcastStreamBase>::update_state_t(&source, BcastStatus::NotOk);
+                    thread::sleep(time::Duration::from_millis(1000));
+                } else {
+                    // deal with null value
+                    let last_body = last_body.replace(": null,", ": \"\",");
+                    let mut results_team_list: Vec<ResultsTeam> = Vec::new();
+
+                    match serde_json::from_str(&last_body.as_str()) {
+                        Ok(obj) => results_team_list = obj,
+                        Err(_) => () 
+                    }
+                    
+                    log::info!("'results_team' json:\n{results_team_list:#?}");
+
+                    // all good, we got some data
+                    <BcastStreamResultsTeam as BcastStreamBase>::update_state_t(&source, BcastStatus::Ok);
+                    {
+                        let mut results_team_locked = results_team.lock().unwrap();
+                        *results_team_locked = results_team_list;
+                    }
+                    thread::sleep(time::Duration::from_millis(1000));
+                }           
+            }
+            log::info!("Worker thread for 'results_team' stopped");
+            <BcastStreamResultsTeam as BcastStreamBase>::set_started_t(&source, false);
+            <BcastStreamResultsTeam as BcastStreamBase>::update_state_t(&source, BcastStatus::Unknown);
+        });
+    }
+}
+
 pub struct BcastStream {
     pub focus: BcastStreamFocusWorker,
     pub nearest: BcastStreamNearestWorker,
     pub event: BcastStreamEventWorker,
+    pub entries: BcastStreamEntriesWorker,
+    pub groups: BcastStreamGroupsWorker,
+    pub results_indv: BcastStreamResultsIndvWorker,
+    pub results_team: BcastStreamResultsTeamWorker,
 }
 
 impl BcastStream {
@@ -304,6 +656,10 @@ impl BcastStream {
             focus: BcastStreamFocusWorker::new(),
             nearest: BcastStreamNearestWorker::new(),
             event: BcastStreamEventWorker::new(),
+            entries: BcastStreamEntriesWorker::new(),
+            groups: BcastStreamGroupsWorker::new(),
+            results_indv: BcastStreamResultsIndvWorker::new(),
+            results_team: BcastStreamResultsTeamWorker::new(),
         }
     }
 
@@ -312,6 +668,10 @@ impl BcastStream {
         self.focus.start();
         self.nearest.start();
         self.event.start();
+        self.entries.start();
+        self.groups.start();
+        self.results_indv.start();
+        self.results_team.start();
     }
 
     pub fn stop(&self) {
@@ -319,9 +679,19 @@ impl BcastStream {
         self.focus.stop();
         self.nearest.stop();
         self.event.stop();
+        self.entries.stop();
+        self.groups.stop();
+        self.results_indv.stop();
+        self.results_team.stop();
     }
 
     pub fn running(&self) -> bool {
-        self.focus.running() & self.nearest.running() & self.event.running()
+        self.focus.running() & 
+        self.nearest.running() & 
+        self.event.running() &
+        self.entries.running() &
+        self.groups.running() &
+        self.results_indv.running() &
+        self.results_team.running()
     }
 }

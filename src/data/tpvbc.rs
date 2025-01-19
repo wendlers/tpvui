@@ -415,3 +415,159 @@ impl BcastStreamEvent {
         state_locked.clone()
     }
 }
+
+pub struct BcastStreamEntries {
+    state: Arc<Mutex<BcastState>>,
+    data: Arc<Mutex<Vec<Entries>>>,
+}
+
+impl BcastStreamBase for BcastStreamEntries {
+    fn set_started(&self, started: bool) {
+        <BcastStreamEntries as BcastStreamBase>::set_started_t(&self.state, started);
+    }
+
+    fn started(&self) -> bool {
+        <BcastStreamEntries as BcastStreamBase>::started_t(&self.state)
+    }
+
+    fn stopped(&self) -> bool {
+        let state_locked = self.state.lock().unwrap();
+        state_locked.stopped 
+    }
+}
+
+impl BcastStreamEntries {
+    pub fn new() -> BcastStreamEntries {
+        BcastStreamEntries {
+            state: Arc::new(Mutex::new(BcastState::new())),
+            data: Arc::new(Mutex::new(vec![Entries::new()])),
+        }
+    }
+
+    pub fn data(&self) -> Vec<Entries> {
+        let data_locked = self.data.lock().unwrap();
+        data_locked.clone()
+    }
+
+    pub fn state(&self) -> BcastState {
+        let state_locked = self.state.lock().unwrap();
+        state_locked.clone()
+    }
+}
+
+pub struct BcastStreamGroups {
+    state: Arc<Mutex<BcastState>>,
+    data: Arc<Mutex<Vec<Groups>>>,
+}
+
+impl BcastStreamBase for BcastStreamGroups {
+    fn set_started(&self, started: bool) {
+        <BcastStreamGroups as BcastStreamBase>::set_started_t(&self.state, started);
+    }
+
+    fn started(&self) -> bool {
+        <BcastStreamGroups as BcastStreamBase>::started_t(&self.state)
+    }
+
+    fn stopped(&self) -> bool {
+        let state_locked = self.state.lock().unwrap();
+        state_locked.stopped 
+    }
+}
+
+impl BcastStreamGroups {
+    pub fn new() -> BcastStreamGroups {
+        BcastStreamGroups {
+            state: Arc::new(Mutex::new(BcastState::new())),
+            data: Arc::new(Mutex::new(vec![Groups::new()])),
+        }
+    }
+
+    pub fn data(&self) -> Vec<Groups> {
+        let data_locked = self.data.lock().unwrap();
+        data_locked.clone()
+    }
+
+    pub fn state(&self) -> BcastState {
+        let state_locked = self.state.lock().unwrap();
+        state_locked.clone()
+    }
+}
+
+pub struct BcastStreamResultsIndv {
+    state: Arc<Mutex<BcastState>>,
+    data: Arc<Mutex<Vec<ResultsIndv>>>,
+}
+
+impl BcastStreamBase for BcastStreamResultsIndv {
+    fn set_started(&self, started: bool) {
+        <BcastStreamResultsIndv as BcastStreamBase>::set_started_t(&self.state, started);
+    }
+
+    fn started(&self) -> bool {
+        <BcastStreamResultsIndv as BcastStreamBase>::started_t(&self.state)
+    }
+
+    fn stopped(&self) -> bool {
+        let state_locked = self.state.lock().unwrap();
+        state_locked.stopped 
+    }
+}
+
+impl BcastStreamResultsIndv {
+    pub fn new() -> BcastStreamResultsIndv {
+        BcastStreamResultsIndv {
+            state: Arc::new(Mutex::new(BcastState::new())),
+            data: Arc::new(Mutex::new(vec![ResultsIndv::new()])),
+        }
+    }
+
+    pub fn data(&self) -> Vec<ResultsIndv> {
+        let data_locked = self.data.lock().unwrap();
+        data_locked.clone()
+    }
+
+    pub fn state(&self) -> BcastState {
+        let state_locked = self.state.lock().unwrap();
+        state_locked.clone()
+    }
+}
+
+pub struct BcastStreamResultsTeam {
+    state: Arc<Mutex<BcastState>>,
+    data: Arc<Mutex<Vec<ResultsTeam>>>,
+}
+
+impl BcastStreamBase for BcastStreamResultsTeam {
+    fn set_started(&self, started: bool) {
+        <BcastStreamResultsTeam as BcastStreamBase>::set_started_t(&self.state, started);
+    }
+
+    fn started(&self) -> bool {
+        <BcastStreamResultsTeam as BcastStreamBase>::started_t(&self.state)
+    }
+
+    fn stopped(&self) -> bool {
+        let state_locked = self.state.lock().unwrap();
+        state_locked.stopped 
+    }
+}
+
+impl BcastStreamResultsTeam {
+    pub fn new() -> BcastStreamResultsTeam {
+        BcastStreamResultsTeam {
+            state: Arc::new(Mutex::new(BcastState::new())),
+            data: Arc::new(Mutex::new(vec![ResultsTeam::new()])),
+        }
+    }
+
+    pub fn data(&self) -> Vec<ResultsTeam> {
+        let data_locked = self.data.lock().unwrap();
+        data_locked.clone()
+    }
+
+    pub fn state(&self) -> BcastState {
+        let state_locked = self.state.lock().unwrap();
+        state_locked.clone()
+    }
+}

@@ -1,4 +1,4 @@
-use crate::data::DataCollector;
+use crate::data::{DataCollector, Facade};
 use super::base::WidgetBase;
 
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -21,6 +21,29 @@ impl WidgetBase for Widget {
 
     fn show_window(&self, ui: &mut egui::Ui, dc: &DataCollector) {
         let entries = dc.get_entries();
+        
+        egui::ScrollArea::horizontal().show(ui, |ui| {
+            egui::ScrollArea::vertical().show(ui, |ui| {
+                egui::Grid::new("entries_data_grid").show(ui, |ui| {
+                    for e in entries.iter() {
+                        self.key_value_simple(ui, "Name", format!("{} (# {})", e.name, e.bibNum), "");
+                        self.key_value_simple(ui, "Country", format!("{}", e.country), "");
+                        ui.end_row();
+                        
+                        self.key_value_simple(ui, "Team", format!("{}", e.team), "");
+                        self.key_value_simple(ui, "Team Code", format!("{}", e.teamCode), "");
+                        ui.end_row();
+                        
+                        ui.label("");
+                        ui.end_row();
+                    }
+                });
+            });
+        });
+    }
+
+    fn show_window_v2(&self, ui: &mut egui::Ui, df: &Facade) {
+        let entries = df.tpv_entries_data();
         
         egui::ScrollArea::horizontal().show(ui, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {

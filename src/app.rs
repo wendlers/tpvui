@@ -183,24 +183,16 @@ impl TpvUiApp {
                     self.data_source_status(ui, &self.df.tpv_focus_state(), "focus");
                     self.data_source_status(ui, &self.df.tpv_nearest_state(), "nearest");
                     self.data_source_status(ui, &self.df.tpv_event_state(), "event");
-                    self.data_source_status(ui, &self.dc.get_source_entries(), "entries");
-                    self.data_source_status(ui, &self.dc.get_source_groups(), "groups");
-                    self.data_source_status(ui, &self.dc.get_source_results_indv(), "resultsIndv");
-                    self.data_source_status(ui, &self.dc.get_source_results_team(), "resultsTeam");
+                    self.data_source_status(ui, &self.df.tpv_entries_state(), "entries");
+                    self.data_source_status(ui, &self.df.tpv_groups_state(), "groups");
+                    self.data_source_status(ui, &self.df.tpv_results_indv_state(), "resultsIndv");
+                    self.data_source_status(ui, &&self.df.tpv_results_team_state(), "resultsTeam");
                 }
             );
         });
     }
 
-    fn window_show_hide(ctx: &egui::Context, wdg: &impl WidgetBase, dc: &DataCollector) {
-        if wdg.is_visible() {            
-            egui::Window::new(wdg.get_title()).show(ctx, |ui| {
-                wdg.show_window(ui, dc);
-            });
-        }          
-    }
-
-    fn window_show_hide_v2(ctx: &egui::Context, wdg: &impl WidgetBase, df: &Facade) {
+    fn window_show_hide(ctx: &egui::Context, wdg: &impl WidgetBase, df: &Facade) {
         if wdg.is_visible() {            
             egui::Window::new(wdg.get_title()).show(ctx, |ui| {
                 wdg.show_window_v2(ui, df);
@@ -209,16 +201,13 @@ impl TpvUiApp {
     }
 
     fn widget_windows(&mut self, ctx: &egui::Context) {
-        TpvUiApp::window_show_hide_v2(ctx, &self.widged_focus, &self.df); 
-        // TpvUiApp::window_show_hide(ctx, &self.widged_focus, &self.dc);
-        TpvUiApp::window_show_hide_v2(ctx, &self.widget_nearest, &self.df);
-        // TpvUiApp::window_show_hide(ctx, &self.widget_nearest, &self.dc); 
-        TpvUiApp::window_show_hide_v2(ctx, &self.widget_event, &self.df); 
-        // TpvUiApp::window_show_hide(ctx, &self.widget_event, &self.dc); 
-        TpvUiApp::window_show_hide(ctx, &self.widget_entries, &self.dc); 
-        TpvUiApp::window_show_hide(ctx, &self.widget_groups, &self.dc); 
-        TpvUiApp::window_show_hide(ctx, &self.widget_results_indv, &self.dc); 
-        TpvUiApp::window_show_hide(ctx, &self.widget_results_team, &self.dc);
+        TpvUiApp::window_show_hide(ctx, &self.widged_focus, &self.df); 
+        TpvUiApp::window_show_hide(ctx, &self.widget_nearest, &self.df);
+        TpvUiApp::window_show_hide(ctx, &self.widget_event, &self.df); 
+        TpvUiApp::window_show_hide(ctx, &self.widget_entries, &self.df);
+        TpvUiApp::window_show_hide(ctx, &self.widget_groups, &self.df);
+        TpvUiApp::window_show_hide(ctx, &self.widget_results_indv, &self.df);
+        TpvUiApp::window_show_hide(ctx, &self.widget_results_team, &self.df);
 
         if self.widget_settings_source.is_visible() {            
             egui::Window::new(self.widget_settings_source.get_title()).show(ctx, |ui| {
