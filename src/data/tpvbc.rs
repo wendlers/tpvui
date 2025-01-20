@@ -1,7 +1,9 @@
 use std::sync::{Arc, Mutex};
 use serde::Deserialize;
 
-pub mod http;
+pub mod interface;
+pub mod httpclient;
+pub mod filesystem;
 
 #[derive(Debug, Deserialize, Clone)]
 #[allow(dead_code, non_snake_case)]

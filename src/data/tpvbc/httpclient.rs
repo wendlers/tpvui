@@ -1,22 +1,24 @@
 use std::{sync::{Arc, Mutex}, thread, time};
 
 use super::{
+    interface::BcastStreamIf, 
+    BcastState, 
     BcastStatus, 
     BcastStreamBase, 
-    BcastStreamEvent, 
-    BcastStreamFocus,
-    BcastStreamNearest,
     BcastStreamEntries, 
-    BcastStreamGroups,
-    BcastStreamResultsIndv,
-    BcastStreamResultsTeam,
-    Focus, 
-    Nearest, 
+    BcastStreamEvent, 
+    BcastStreamFocus, 
+    BcastStreamGroups, 
+    BcastStreamNearest, 
+    BcastStreamResultsIndv, 
+    BcastStreamResultsTeam, 
+    Entries, 
     Event, 
-    Entries,
-    Groups,
-    ResultsIndv,
-    ResultsTeam,
+    Focus, 
+    Groups, 
+    Nearest, 
+    ResultsIndv, 
+    ResultsTeam
 };
 
 fn http_get_blocking(status: &Arc<Mutex<u16>>, body: &Arc<Mutex<String>>, url: &str) -> (u16, String) {
@@ -24,7 +26,7 @@ fn http_get_blocking(status: &Arc<Mutex<u16>>, body: &Arc<Mutex<String>>, url: &
     let body_clone = Arc::clone(&body);
     let request = ehttp::Request::get(url);
  
-    log::info!("GET {}", url);
+    log::debug!("GET {}", url);
 
     ehttp::fetch(request, move |result: ehttp::Result<ehttp::Response>| {
         let mut status_locked = status_clone.lock().unwrap();
@@ -120,7 +122,7 @@ impl BcastStreamFocusWorker {
                         Err(_) => () 
                     }
                     
-                    log::info!("'focus' json:\n{focus_list:#?}");
+                    log::debug!("'focus' json:\n{focus_list:#?}");
 
                     // all good, we got some data
                     <BcastStreamFocus as BcastStreamBase>::update_state_t(&source, BcastStatus::Ok);
@@ -207,7 +209,7 @@ impl BcastStreamNearestWorker {
                         Err(_) => () 
                     }
                     
-                    log::info!("'nearest' json:\n{nearest_list:#?}");
+                    log::debug!("'nearest' json:\n{nearest_list:#?}");
 
                     // all good, we got some data
                     <BcastStreamNearest as BcastStreamBase>::update_state_t(&source, BcastStatus::Ok);
@@ -295,7 +297,7 @@ impl BcastStreamEventWorker {
                         Err(_) => () 
                     }
                     
-                    log::info!("'event' json:\n{event_list:#?}");
+                    log::debug!("'event' json:\n{event_list:#?}");
 
                     // all good, we got some data
                     <BcastStreamEvent as BcastStreamBase>::update_state_t(&source, BcastStatus::Ok);
@@ -382,7 +384,7 @@ impl BcastStreamEntriesWorker {
                         Err(_) => () 
                     }
                     
-                    log::info!("'entries' json:\n{entries_list:#?}");
+                    log::debug!("'entries' json:\n{entries_list:#?}");
 
                     // all good, we got some data
                     <BcastStreamEntries as BcastStreamBase>::update_state_t(&source, BcastStatus::Ok);
@@ -467,7 +469,7 @@ impl BcastStreamGroupsWorker {
                         Err(_) => () 
                     }
                     
-                    log::info!("'groups' json:\n{groups_list:#?}");
+                    log::debug!("'groups' json:\n{groups_list:#?}");
 
                     // all good, we got some data
                     <BcastStreamGroups as BcastStreamBase>::update_state_t(&source, BcastStatus::Ok);
@@ -552,7 +554,7 @@ impl BcastStreamResultsIndvWorker {
                         Err(_) => () 
                     }
                     
-                    log::info!("'results_indv' json:\n{results_indv_list:#?}");
+                    log::debug!("'results_indv' json:\n{results_indv_list:#?}");
 
                     // all good, we got some data
                     <BcastStreamResultsIndv as BcastStreamBase>::update_state_t(&source, BcastStatus::Ok);
@@ -637,7 +639,7 @@ impl BcastStreamResultsTeamWorker {
                         Err(_) => () 
                     }
                     
-                    log::info!("'results_team' json:\n{results_team_list:#?}");
+                    log::debug!("'results_team' json:\n{results_team_list:#?}");
 
                     // all good, we got some data
                     <BcastStreamResultsTeam as BcastStreamBase>::update_state_t(&source, BcastStatus::Ok);
@@ -665,6 +667,96 @@ pub struct BcastStream {
     pub results_team: BcastStreamResultsTeamWorker,
 }
 
+impl BcastStreamIf for BcastStream {
+    fn start(&mut self, url: String) {
+        log::info!("BcastStream::start");
+        self.focus.start(url.clone());
+        self.nearest.start(url.clone());
+        self.event.start(url.clone());
+        self.entries.start(url.clone());
+        self.groups.start(url.clone());
+        self.results_indv.start(url.clone());
+        self.results_team.start(url.clone());
+    }
+
+    fn stop(&self) {
+        log::info!("BcastStream::stop");
+        self.focus.stop();
+        self.nearest.stop();
+        self.event.stop();
+        self.entries.stop();
+        self.groups.stop();
+        self.results_indv.stop();
+        self.results_team.stop();
+    }
+
+    fn running(&self) -> bool {
+        self.focus.running() & 
+        self.nearest.running() & 
+        self.event.running() &
+        self.entries.running() &
+        self.groups.running() &
+        self.results_indv.running() &
+        self.results_team.running()
+    }
+
+    fn focus_data(&self) -> Focus {
+        self.focus.stream.data().clone()
+    }
+
+    fn focus_state(&self) -> BcastState {
+        self.focus.stream.state().clone()
+    }
+
+    fn nearest_data(&self) -> Vec<Nearest> {
+        self.nearest.stream.data().clone()
+    }
+
+    fn nearest_state(&self) -> BcastState {
+        self.nearest.stream.state().clone()
+    }
+
+    fn event_data(&self) -> Event {
+        self.event.stream.data().clone()
+    }
+
+    fn event_state(&self) -> BcastState {
+        self.event.stream.state().clone()
+    }
+
+    fn entries_data(&self) -> Vec<Entries> {
+        self.entries.stream.data().clone()
+    }
+
+    fn entries_state(&self) -> BcastState {
+        self.entries.stream.state().clone()
+    }
+
+    fn groups_data(&self) -> Vec<Groups> {
+        self.groups.stream.data().clone()
+    }
+
+    fn groups_state(&self) -> BcastState {
+        self.groups.stream.state().clone()
+    }
+
+    fn results_indv_data(&self) -> Vec<ResultsIndv> {
+        self.results_indv.stream.data().clone()
+    }
+
+    fn results_indv_state(&self) -> BcastState {
+        self.results_indv.stream.state().clone()
+    }
+
+    fn results_team_data(&self) -> Vec<ResultsTeam> {
+        self.results_team.stream.data().clone()
+    }
+
+    fn results_team_state(&self) -> BcastState {
+        self.results_team.stream.state().clone()
+    }
+}
+
 impl BcastStream {
     pub fn new() -> BcastStream {
         BcastStream {
@@ -676,37 +768,5 @@ impl BcastStream {
             results_indv: BcastStreamResultsIndvWorker::new(),
             results_team: BcastStreamResultsTeamWorker::new(),
         }
-    }
-
-    pub fn start(&mut self, url: String) {
-        log::info!("BcastStream::start");
-        self.focus.start(url.clone());
-        self.nearest.start(url.clone());
-        self.event.start(url.clone());
-        self.entries.start(url.clone());
-        self.groups.start(url.clone());
-        self.results_indv.start(url.clone());
-        self.results_team.start(url.clone());
-    }
-
-    pub fn stop(&self) {
-        log::info!("BcastStream::stop");
-        self.focus.stop();
-        self.nearest.stop();
-        self.event.stop();
-        self.entries.stop();
-        self.groups.stop();
-        self.results_indv.stop();
-        self.results_team.stop();
-    }
-
-    pub fn running(&self) -> bool {
-        self.focus.running() & 
-        self.nearest.running() & 
-        self.event.running() &
-        self.entries.running() &
-        self.groups.running() &
-        self.results_indv.running() &
-        self.results_team.running()
     }
 }

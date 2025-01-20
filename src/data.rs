@@ -1,17 +1,51 @@
+use tpvbc::interface::BcastStreamIf;
+
 pub mod tpvbc;
 
+#[derive(Clone, PartialEq)]
+pub enum BcastMethod {
+    HttpClient,
+    File,
+}
+
 pub struct Facade {
-    tpv: tpvbc::http::BcastStream,
+    bcast_emthod: BcastMethod,
+    tpv: Box<dyn BcastStreamIf>,
 }
 
 impl Facade {
     pub fn new() -> Facade {
         Facade {
-            tpv: tpvbc::http::BcastStream::new(),
+            bcast_emthod: BcastMethod::HttpClient,
+            tpv: Box::new(tpvbc::httpclient::BcastStream::new()),
         }
     }
 
     pub fn start(&mut self, url: String) {
+        if self.running() {
+            log::warn!("Steaming is already running! Stop first!");
+            return;
+        }
+
+        let bcast_method;
+
+        if url.starts_with("file://") {
+            bcast_method = BcastMethod::File;
+        } else {
+            bcast_method = BcastMethod::HttpClient;
+        }
+
+        if self.bcast_emthod != bcast_method {
+            if bcast_method == BcastMethod::File {
+                log::info!("TPV bcast data is read from FS");
+                self.tpv = Box::new(tpvbc::filesystem::BcastStream::new());
+            } else {
+                log::info!("TPV bcast data is read from HTTP (client)");
+                self.tpv = Box::new(tpvbc::httpclient::BcastStream::new());
+            }
+            self.bcast_emthod = bcast_method;
+        }
+
         log::info!("Facade::start");
         self.tpv.start(url);
     }
@@ -26,58 +60,58 @@ impl Facade {
     }
 
     pub fn tpv_focus_data(&self) -> tpvbc::Focus {
-        self.tpv.focus.stream.data().clone()
+        self.tpv.focus_data()
     }
 
     pub fn tpv_focus_state(&self) -> tpvbc::BcastState {
-        self.tpv.focus.stream.state().clone()
+        self.tpv.focus_state()
     }
 
     pub fn tpv_nearest_data(&self) -> Vec<tpvbc::Nearest> {
-        self.tpv.nearest.stream.data().clone()
+        self.tpv.nearest_data()
     }
 
     pub fn tpv_nearest_state(&self) -> tpvbc::BcastState {
-        self.tpv.nearest.stream.state().clone()
+        self.tpv.nearest_state()
     }
 
     pub fn tpv_event_data(&self) -> tpvbc::Event {
-        self.tpv.event.stream.data().clone()
+        self.tpv.event_data()
     }
 
     pub fn tpv_event_state(&self) -> tpvbc::BcastState {
-        self.tpv.event.stream.state().clone()
+        self.tpv.event_state()
     }
 
     pub fn tpv_entries_data(&self) -> Vec<tpvbc::Entries> {
-        self.tpv.entries.stream.data().clone()
+        self.tpv.entries_data()
     }
 
     pub fn tpv_entries_state(&self) -> tpvbc::BcastState {
-        self.tpv.entries.stream.state().clone()
+        self.tpv.entries_state()
     }
 
     pub fn tpv_groups_data(&self) -> Vec<tpvbc::Groups> {
-        self.tpv.groups.stream.data().clone()
+        self.tpv.groups_data()
     }
 
     pub fn tpv_groups_state(&self) -> tpvbc::BcastState {
-        self.tpv.groups.stream.state().clone()
+        self.tpv.groups_state()
     }
 
     pub fn tpv_results_indv_data(&self) -> Vec<tpvbc::ResultsIndv> {
-        self.tpv.results_indv.stream.data().clone()
+        self.tpv.results_indv_data()
     }
 
     pub fn tpv_results_indv_state(&self) -> tpvbc::BcastState {
-        self.tpv.results_indv.stream.state().clone()
+        self.tpv.results_indv_state()
     }
 
     pub fn tpv_results_team_data(&self) -> Vec<tpvbc::ResultsTeam> {
-        self.tpv.results_team.stream.data().clone()
+        self.tpv.results_team_data()
     }
 
     pub fn tpv_results_team_state(&self) -> tpvbc::BcastState {
-        self.tpv.results_team.stream.state().clone()
+        self.tpv.results_team_state()
     }
 }
