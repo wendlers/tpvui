@@ -1,5 +1,7 @@
 use std::{sync::Arc, path::Path, sync::mpsc, thread, time, fs};
 
+use crate::data::ride::Ride;
+
 use super::{
     interface::BcastStreamIf, 
     BcastState, 
@@ -57,6 +59,7 @@ impl BcastStreamFocusWorker {
     fn collect(&self) {
         let source = Arc::clone(&self.stream.state);
         let focus = Arc::clone(&self.stream.data);
+        let ride = Arc::clone(&self.stream.ride);
         let url = self.url.clone();
 
         thread::spawn(move || {
@@ -117,6 +120,9 @@ impl BcastStreamFocusWorker {
                                     Some(f) => *focus_locked = f.clone(),
                                     None => (), // empty json array -> ignore
                                 }
+
+                                let mut ride_locked = ride.lock().unwrap();
+                                ride_locked.update(focus_locked.clone());
                             }
                         })(&content[3..]), // remove utf-8 BOM
                         Err(err) => (|e| {
@@ -842,59 +848,63 @@ impl BcastStreamIf for BcastStream {
     }
 
     fn focus_data(&self) -> Focus {
-        self.focus.stream.data().clone()
+        self.focus.stream.data()
     }
 
     fn focus_state(&self) -> BcastState {
-        self.focus.stream.state().clone()
+        self.focus.stream.state()
     }
 
     fn nearest_data(&self) -> Vec<Nearest> {
-        self.nearest.stream.data().clone()
+        self.nearest.stream.data()
     }
 
     fn nearest_state(&self) -> BcastState {
-        self.nearest.stream.state().clone()
+        self.nearest.stream.state()
     }
 
     fn event_data(&self) -> Event {
-        self.event.stream.data().clone()
+        self.event.stream.data()
     }
 
     fn event_state(&self) -> BcastState {
-        self.event.stream.state().clone()
+        self.event.stream.state()
     }
 
     fn entries_data(&self) -> Vec<Entries> {
-        self.entries.stream.data().clone()
+        self.entries.stream.data()
     }
 
     fn entries_state(&self) -> BcastState {
-        self.entries.stream.state().clone()
+        self.entries.stream.state()
     }
 
     fn groups_data(&self) -> Vec<Groups> {
-        self.groups.stream.data().clone()
+        self.groups.stream.data()
     }
 
     fn groups_state(&self) -> BcastState {
-        self.groups.stream.state().clone()
+        self.groups.stream.state()
     }
 
     fn results_indv_data(&self) -> Vec<ResultsIndv> {
-        self.results_indv.stream.data().clone()
+        self.results_indv.stream.data()
     }
 
     fn results_indv_state(&self) -> BcastState {
-        self.results_indv.stream.state().clone()
+        self.results_indv.stream.state()
     }
 
     fn results_team_data(&self) -> Vec<ResultsTeam> {
-        self.results_team.stream.data().clone()
+        self.results_team.stream.data()
     }
 
     fn results_team_state(&self) -> BcastState {
-        self.results_team.stream.state().clone()
+        self.results_team.stream.state()
+    }
+
+    fn ride(&self) -> Ride {
+        self.focus.stream.ride()
     }
 }
 

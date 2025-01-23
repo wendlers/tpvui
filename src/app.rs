@@ -12,6 +12,7 @@ mod entries;
 mod groups;
 mod results_indv;
 mod results_team;
+mod bike_computer;
 mod setings_source;
 
 const APP_KEY: &str = "tpvui";
@@ -27,6 +28,7 @@ pub struct TpvUiApp {
     widget_groups: groups::Widget,
     widget_results_indv: results_indv::Widget,
     widget_results_team: results_team::Widget,
+    widget_bike_computer: bike_computer::Widget,
     widget_settings_source: setings_source::Widget,
 
     #[serde(skip)]
@@ -43,6 +45,7 @@ impl Default for TpvUiApp {
             widget_groups: groups::Widget::new(),
             widget_results_indv: results_indv::Widget::new(),
             widget_results_team: results_team::Widget::new(),
+            widget_bike_computer: bike_computer::Widget::new(),
             widget_settings_source: setings_source::Widget::new(),
             df: Facade::new(),
         }
@@ -140,6 +143,7 @@ impl TpvUiApp {
                     self.widget_groups.show_label(ui);
                     self.widget_results_indv.show_label(ui);
                     self.widget_results_team.show_label(ui);
+                    self.widget_bike_computer.show_label(ui);
                 });
             });
          });
@@ -199,6 +203,7 @@ impl TpvUiApp {
         TpvUiApp::window_show_hide(ctx, &self.widget_groups, &self.df);
         TpvUiApp::window_show_hide(ctx, &self.widget_results_indv, &self.df);
         TpvUiApp::window_show_hide(ctx, &self.widget_results_team, &self.df);
+        TpvUiApp::window_show_hide(ctx, &self.widget_bike_computer, &self.df);
 
         if self.widget_settings_source.is_visible() {            
             egui::Window::new(self.widget_settings_source.get_title()).show(ctx, |ui| {

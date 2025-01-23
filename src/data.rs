@@ -1,5 +1,6 @@
 use tpvbc::interface::BcastStreamIf;
 
+pub mod ride;
 pub mod tpvbc;
 
 #[derive(Clone, PartialEq)]
@@ -113,5 +114,9 @@ impl Facade {
 
     pub fn tpv_results_team_state(&self) -> tpvbc::BcastState {
         self.tpv.results_team_state()
+    }
+
+    pub fn ride(&self) -> ride::Ride {
+        self.tpv.ride()
     }
 }

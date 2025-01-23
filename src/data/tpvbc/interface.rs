@@ -1,3 +1,5 @@
+use crate::data::ride::Ride;
+
 use super::{
     BcastState,
     Focus,
@@ -43,4 +45,6 @@ pub trait BcastStreamIf {
     fn results_team_data(&self) -> Vec<ResultsTeam>;
 
     fn results_team_state(&self) -> BcastState;
+
+    fn ride(&self) -> Ride;
 }

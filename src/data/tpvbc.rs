@@ -1,6 +1,8 @@
 use std::sync::{Arc, Mutex};
 use serde::Deserialize;
 
+use super::ride::Ride;
+
 pub mod interface;
 pub mod httpclient;
 pub mod filesystem;
@@ -304,6 +306,7 @@ pub trait BcastStreamBase {
 pub struct BcastStreamFocus {
     state: Arc<Mutex<BcastState>>,
     data: Arc<Mutex<Focus>>,
+    ride: Arc<Mutex<Ride>>,
 }
 
 impl BcastStreamBase for BcastStreamFocus {
@@ -326,6 +329,7 @@ impl BcastStreamFocus {
         BcastStreamFocus {
             state: Arc::new(Mutex::new(BcastState::new())),
             data: Arc::new(Mutex::new(Focus::new())),
+            ride: Arc::new(Mutex::new(Ride::new())),
         }
     }
 
@@ -337,6 +341,11 @@ impl BcastStreamFocus {
     pub fn state(&self) -> BcastState {
         let state_locked = self.state.lock().unwrap();
         state_locked.clone()
+    }
+
+    pub fn ride(&self) -> Ride {
+        let ride_locked = self.ride.lock().unwrap();
+        ride_locked.clone()
     }
 }
 
