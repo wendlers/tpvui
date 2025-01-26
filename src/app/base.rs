@@ -5,7 +5,7 @@ pub trait WidgetBase {
     }
 
     fn show_label_base(&mut self, ui: &mut egui::Ui, visible: bool) -> bool {
-        if ui.selectable_label(visible, egui::RichText::new(self.title()).size(20.0)).clicked() {
+        if ui.selectable_label(visible, egui::RichText::new(self.title()).size(16.0)).clicked() {
             return !visible;
         }
         visible
@@ -30,6 +30,24 @@ pub trait WidgetBase {
         let fsize = self.default_text_size();
         ui.label(egui::RichText::new(v).size(fsize).color(egui::Color32::LIGHT_BLUE));
     }  
+
+    fn field_1x1(&self, ui: &mut egui::Ui, t: String, v: String) {
+        ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
+            ui.separator();
+            ui.label(egui::RichText::new(t).size(14.0).color(egui::Color32::DARK_GRAY));
+            ui.separator();
+            ui.label(egui::RichText::new(v).size(32.0).color(egui::Color32::LIGHT_BLUE));
+        });
+    }
+
+    fn field_2x2(&self, ui: &mut egui::Ui, t: String, v: String) {
+        ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
+            ui.separator();
+            ui.label(egui::RichText::new(t).size(14.0).color(egui::Color32::DARK_GRAY));
+            ui.separator();
+            ui.label(egui::RichText::new(v).size(48.0).color(egui::Color32::LIGHT_BLUE));
+        });
+    }
 
     fn title(&self) -> &'static str;
 

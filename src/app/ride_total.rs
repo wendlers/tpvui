@@ -8,7 +8,7 @@ pub struct Widget {
 
 impl WidgetBase for Widget {   
     fn title(&self) -> &'static str {
-        "Bike Computer"
+        "Ride Total"
     }
 
     fn visible(&self) -> bool {
@@ -24,7 +24,7 @@ impl WidgetBase for Widget {
         
         egui::ScrollArea::horizontal().show(ui, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
-                egui::Grid::new("event_data_grid").show(ui, |ui| {
+                egui::Grid::new("ride_total_data_grid").show(ui, |ui| {
                     self.key_value_simple(ui, "Time", format!("{}", ride.total.time_hms()), "hms");
                     self.key_value_simple(ui, "Dist.", format!("{:4.1}", ride.total.distance), "km");
                     ui.end_row();

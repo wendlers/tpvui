@@ -279,8 +279,8 @@ impl Ride {
             if focus.eventLapsDone >= 0 {
                 self.total.lap = focus.eventLapsDone as u32 + 1;
             }
-
-            self.total.wind.update(&focus);
         }
+        // wind data could always change in TPV, also when ride was not started yet
+        self.total.wind.update(&focus);
     }
 }

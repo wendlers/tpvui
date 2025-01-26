@@ -5,14 +5,18 @@ use egui::Color32;
 use crate::data::{Facade, tpvbc::BcastState, tpvbc::BcastStatus};
 
 mod base;
-mod focus;
-mod nearest;
-mod event;
-mod entries;
-mod groups;
-mod results_indv;
-mod results_team;
-mod bike_computer;
+mod tpv_focus;
+mod tpv_nearest;
+mod tpv_event;
+mod tpv_entries;
+mod tpv_groups;
+mod tpv_results_indv;
+mod tpv_results_team;
+mod ride_total;
+mod ride_time;
+mod ride_speed;
+mod ride_heartrate;
+mod ride_power;
 mod setings_source;
 
 const APP_KEY: &str = "tpvui";
@@ -21,14 +25,18 @@ const APP_KEY: &str = "tpvui";
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct TpvUiApp {
-    widged_focus: focus::Widget,
-    widget_nearest: nearest::Widget,
-    widget_event: event::Widget,
-    widget_entries: entries::Widget,
-    widget_groups: groups::Widget,
-    widget_results_indv: results_indv::Widget,
-    widget_results_team: results_team::Widget,
-    widget_bike_computer: bike_computer::Widget,
+    widged_tpv_focus: tpv_focus::Widget,
+    widget_tpv_nearest: tpv_nearest::Widget,
+    widget_tpv_event: tpv_event::Widget,
+    widget_tpv_entries: tpv_entries::Widget,
+    widget_tpv_groups: tpv_groups::Widget,
+    widget_tpv_results_indv: tpv_results_indv::Widget,
+    widget_tpv_results_team: tpv_results_team::Widget,
+    widget_ride_total: ride_total::Widget,
+    widget_ride_time: ride_time::Widget,
+    widget_ride_speed: ride_speed::Widget,
+    widget_ride_heartrate: ride_heartrate::Widget,
+    widget_ride_power: ride_power::Widget,
     widget_settings_source: setings_source::Widget,
 
     #[serde(skip)]
@@ -38,14 +46,18 @@ pub struct TpvUiApp {
 impl Default for TpvUiApp {
     fn default() -> Self {
         Self {
-            widged_focus: focus::Widget::new(), 
-            widget_nearest: nearest::Widget::new(),   
-            widget_event: event::Widget::new(),
-            widget_entries: entries::Widget::new(),
-            widget_groups: groups::Widget::new(),
-            widget_results_indv: results_indv::Widget::new(),
-            widget_results_team: results_team::Widget::new(),
-            widget_bike_computer: bike_computer::Widget::new(),
+            widged_tpv_focus: tpv_focus::Widget::new(), 
+            widget_tpv_nearest: tpv_nearest::Widget::new(),   
+            widget_tpv_event: tpv_event::Widget::new(),
+            widget_tpv_entries: tpv_entries::Widget::new(),
+            widget_tpv_groups: tpv_groups::Widget::new(),
+            widget_tpv_results_indv: tpv_results_indv::Widget::new(),
+            widget_tpv_results_team: tpv_results_team::Widget::new(),
+            widget_ride_total: ride_total::Widget::new(),
+            widget_ride_time: ride_time::Widget::new(),
+            widget_ride_speed: ride_speed::Widget::new(),
+            widget_ride_heartrate: ride_heartrate::Widget::new(),
+            widget_ride_power: ride_power::Widget::new(),
             widget_settings_source: setings_source::Widget::new(),
             df: Facade::new(),
         }
@@ -136,14 +148,24 @@ impl TpvUiApp {
         egui::SidePanel::left("widget_panel").show(ctx, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
                 ui.with_layout(egui::Layout::top_down_justified(egui::Align::LEFT), |ui| {
-                    self.widged_focus.show_label(ui);
-                    self.widget_nearest.show_label(ui);
-                    self.widget_event.show_label(ui);
-                    self.widget_entries.show_label(ui);
-                    self.widget_groups.show_label(ui);
-                    self.widget_results_indv.show_label(ui);
-                    self.widget_results_team.show_label(ui);
-                    self.widget_bike_computer.show_label(ui);
+                    ui.collapsing(egui::RichText::new("Bike Computer").size(16.0), |ui| { 
+                        self.widget_ride_time.show_label(ui);
+                        self.widget_ride_speed.show_label(ui);
+                        self.widget_ride_heartrate.show_label(ui);
+                        self.widget_ride_power.show_label(ui);
+                    });
+                    ui.collapsing(egui::RichText::new("Ride").size(16.0), |ui| {
+                        self.widget_ride_total.show_label(ui);
+                    });
+                    ui.collapsing(egui::RichText::new("TPV Raw").size(16.0), |ui| {     
+                        self.widged_tpv_focus.show_label(ui);
+                        self.widget_tpv_nearest.show_label(ui);
+                        self.widget_tpv_event.show_label(ui);
+                        self.widget_tpv_entries.show_label(ui);
+                        self.widget_tpv_groups.show_label(ui);
+                        self.widget_tpv_results_indv.show_label(ui);
+                        self.widget_tpv_results_team.show_label(ui);
+                    });
                 });
             });
          });
@@ -196,14 +218,18 @@ impl TpvUiApp {
     }
 
     fn widget_windows(&mut self, ctx: &egui::Context) {
-        TpvUiApp::window_show_hide(ctx, &self.widged_focus, &self.df); 
-        TpvUiApp::window_show_hide(ctx, &self.widget_nearest, &self.df);
-        TpvUiApp::window_show_hide(ctx, &self.widget_event, &self.df); 
-        TpvUiApp::window_show_hide(ctx, &self.widget_entries, &self.df);
-        TpvUiApp::window_show_hide(ctx, &self.widget_groups, &self.df);
-        TpvUiApp::window_show_hide(ctx, &self.widget_results_indv, &self.df);
-        TpvUiApp::window_show_hide(ctx, &self.widget_results_team, &self.df);
-        TpvUiApp::window_show_hide(ctx, &self.widget_bike_computer, &self.df);
+        TpvUiApp::window_show_hide(ctx, &self.widged_tpv_focus, &self.df); 
+        TpvUiApp::window_show_hide(ctx, &self.widget_tpv_nearest, &self.df);
+        TpvUiApp::window_show_hide(ctx, &self.widget_tpv_event, &self.df); 
+        TpvUiApp::window_show_hide(ctx, &self.widget_tpv_entries, &self.df);
+        TpvUiApp::window_show_hide(ctx, &self.widget_tpv_groups, &self.df);
+        TpvUiApp::window_show_hide(ctx, &self.widget_tpv_results_indv, &self.df);
+        TpvUiApp::window_show_hide(ctx, &self.widget_tpv_results_team, &self.df);
+        TpvUiApp::window_show_hide(ctx, &self.widget_ride_total, &self.df);
+        TpvUiApp::window_show_hide(ctx, &self.widget_ride_time, &self.df);
+        TpvUiApp::window_show_hide(ctx, &self.widget_ride_speed, &self.df);
+        TpvUiApp::window_show_hide(ctx, &self.widget_ride_heartrate, &self.df);
+        TpvUiApp::window_show_hide(ctx, &self.widget_ride_power, &self.df);
 
         if self.widget_settings_source.is_visible() {            
             egui::Window::new(self.widget_settings_source.get_title()).show(ctx, |ui| {
