@@ -12,7 +12,6 @@ mod tpv_entries;
 mod tpv_groups;
 mod tpv_results_indv;
 mod tpv_results_team;
-mod ride_total;
 mod ride_time;
 mod ride_speed;
 mod ride_heartrate;
@@ -32,7 +31,6 @@ pub struct TpvUiApp {
     widget_tpv_groups: tpv_groups::Widget,
     widget_tpv_results_indv: tpv_results_indv::Widget,
     widget_tpv_results_team: tpv_results_team::Widget,
-    widget_ride_total: ride_total::Widget,
     widget_ride_time: ride_time::Widget,
     widget_ride_speed: ride_speed::Widget,
     widget_ride_heartrate: ride_heartrate::Widget,
@@ -53,7 +51,6 @@ impl Default for TpvUiApp {
             widget_tpv_groups: tpv_groups::Widget::new(),
             widget_tpv_results_indv: tpv_results_indv::Widget::new(),
             widget_tpv_results_team: tpv_results_team::Widget::new(),
-            widget_ride_total: ride_total::Widget::new(),
             widget_ride_time: ride_time::Widget::new(),
             widget_ride_speed: ride_speed::Widget::new(),
             widget_ride_heartrate: ride_heartrate::Widget::new(),
@@ -154,9 +151,6 @@ impl TpvUiApp {
                         self.widget_ride_heartrate.show_label(ui);
                         self.widget_ride_power.show_label(ui);
                     });
-                    ui.collapsing(egui::RichText::new("Ride").size(16.0), |ui| {
-                        self.widget_ride_total.show_label(ui);
-                    });
                     ui.collapsing(egui::RichText::new("TPV Raw").size(16.0), |ui| {     
                         self.widged_tpv_focus.show_label(ui);
                         self.widget_tpv_nearest.show_label(ui);
@@ -225,7 +219,6 @@ impl TpvUiApp {
         TpvUiApp::window_show_hide(ctx, &self.widget_tpv_groups, &self.df);
         TpvUiApp::window_show_hide(ctx, &self.widget_tpv_results_indv, &self.df);
         TpvUiApp::window_show_hide(ctx, &self.widget_tpv_results_team, &self.df);
-        TpvUiApp::window_show_hide(ctx, &self.widget_ride_total, &self.df);
         TpvUiApp::window_show_hide(ctx, &self.widget_ride_time, &self.df);
         TpvUiApp::window_show_hide(ctx, &self.widget_ride_speed, &self.df);
         TpvUiApp::window_show_hide(ctx, &self.widget_ride_heartrate, &self.df);
