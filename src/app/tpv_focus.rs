@@ -31,8 +31,8 @@ impl WidgetBase for Widget {
                     self.key_value_simple(ui, "Team Code", format!("{}", focus.teamCode), "");
                     ui.end_row();
 
-                    self.key_value_simple(ui, "Speed", format!("{}", focus.speed / 275), "kph");
-                    self.key_value_simple(ui, "Distance", format!("{}", focus.distance / 1000), "km");
+                    self.key_value_simple(ui, "Speed", format!("{}", focus.speed), "kph/275");
+                    self.key_value_simple(ui, "Distance", format!("{}", focus.distance), "m");
                     self.key_value_simple(ui, "Time", format!("{}", focus.time), "s");
                     ui.end_row();
 
@@ -52,7 +52,7 @@ impl WidgetBase for Widget {
                     self.key_value_simple(ui, "Nrm. Power", format!("{}", focus.nrmPower), "W");
                     ui.end_row();
 
-                    self.key_value_simple(ui, "Windspeed", format!("{}", focus.windSpeed / 275), "kph");
+                    self.key_value_simple(ui, "Windspeed", format!("{}", focus.windSpeed), "kph/275");
                     self.key_value_simple(ui, "Wind angle", format!("{}", focus.windAngle), "deg");
                     self.key_value_simple(ui, "Draft", format!("{}", focus.draft), "%");
                     ui.end_row();
@@ -69,8 +69,8 @@ impl WidgetBase for Widget {
                     self.key_value_simple(ui, "Laps Done", format!("{}", focus.eventLapsDone), "");
                     ui.end_row();
 
-                    self.key_value_simple(ui, "Distance Total", format!("{}", focus.eventDistanceTotal / 1000), "km");
-                    self.key_value_simple(ui, "Distance Done", format!("{}", focus.eventDistanceDone / 1000), "km");
+                    self.key_value_simple(ui, "Distance Total", format!("{}", focus.eventDistanceTotal), "m");
+                    self.key_value_simple(ui, "Distance Done", format!("{}", focus.eventDistanceDone), "m");
                     ui.end_row();
 
                     self.key_value_simple(ui, "Next Location", format!("{}", focus.eventNextLocation), "");

@@ -34,8 +34,8 @@ impl WidgetBase for Widget {
                         self.key_value_simple(ui, "Team Code", format!("{}", n.teamCode), "");
                         ui.end_row();
 
-                        self.key_value_simple(ui, "Speed", format!("{}", n.speed / 275), "kph");
-                        self.key_value_simple(ui, "Distance", format!("{}", n.distance / 1000), "km");
+                        self.key_value_simple(ui, "Speed", format!("{}", n.speed), "kph/275");
+                        self.key_value_simple(ui, "Distance", format!("{}", n.distance), "m");
                         ui.end_row();
 
                         self.key_value_simple(ui, "Position", format!("{}", n.position), "");
