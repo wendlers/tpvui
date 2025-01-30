@@ -23,7 +23,7 @@ impl WidgetBase for Widget {
         let ride = df.ride();
         
         // 2x2 grid
-        egui::Grid::new("power_grid_1x1")
+        egui::Grid::new("power_grid_1x1_a")
         .min_col_width(200.0)
         .max_col_width(200.0)
         .min_row_height(100.0)
@@ -32,7 +32,34 @@ impl WidgetBase for Widget {
         .show(ui, |ui| {
             self.field_2x2(ui, String::from("★ W"), format!("{:4.0}", ride.total.power.cur));
             ui.end_row();
-            self.field_2x2(ui, String::from("nrm W"), format!("{:4.0}", ride.total.power.nrm));
+        });
+
+        // 1x2 grid
+        egui::Grid::new("power_grid_1x2")
+        .min_col_width(200.0)
+        .max_col_width(200.0)
+        .min_row_height(25.0)
+        .num_columns(1)
+        .spacing([5.0, 5.0])
+        .show(ui, |ui| {
+            ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
+                ui.label(egui::RichText::new(format!("Z{:1.0} {}", 
+                    ride.athlete.pwr_zones.zone(ride.total.power.cur),
+                    ride.athlete.pwr_zones.name(ride.total.power.cur)))
+                    .size(21.0).color(egui::Color32::LIGHT_GREEN));
+            });
+            ui.end_row();
+        });
+        
+        // 2x2 grid
+        egui::Grid::new("power_grid_1x1_b")
+        .min_col_width(200.0)
+        .max_col_width(200.0)
+        .min_row_height(100.0)
+        .num_columns(1)
+        .spacing([5.0, 5.0])
+        .show(ui, |ui| {
+            self.field_1x1(ui, String::from("nrm W"), format!("{:4.0}", ride.total.power.nrm));
             ui.end_row();
         });
 

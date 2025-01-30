@@ -2,6 +2,7 @@ use tpvbc::interface::BcastStreamIf;
 
 pub mod ride;
 pub mod tpvbc;
+pub mod athlete;
 
 #[derive(Clone, PartialEq)]
 pub enum BcastMethod {

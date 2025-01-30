@@ -1,3 +1,5 @@
+use crate::data::athlete::Athlete;
+
 #[derive(Clone, PartialEq)]
 pub struct Speed {
     pub cur: f32,
@@ -117,7 +119,7 @@ impl Power {
         }
     }
 
-    fn update(&mut self, focus: &super::tpvbc::Focus) {
+    fn update(&mut self, focus: &super::tpvbc::Focus, weight: f32) {
         self.cur = focus.power;
 
         if self.first || self.cur > self.max {
@@ -125,7 +127,7 @@ impl Power {
         }
 
         self.nrm = focus.nrmPower; 
-        self.wpk = self.cur as f32 / 61.0;
+        self.wpk = self.cur as f32 / weight;
 
         self.first = false;
     }
@@ -248,6 +250,7 @@ impl Metrics {
 
 #[derive(Clone, PartialEq)]
 pub struct Ride {
+    pub athlete: Athlete,
     pub total: Metrics,
     pub current_lap: Metrics,
     pub past_laps: Vec<Metrics>,
@@ -256,6 +259,7 @@ pub struct Ride {
 impl Ride {
     pub fn new() -> Ride {
         Ride {
+            athlete: Athlete::new(),
             total: Metrics::new(),
             current_lap: Metrics::new(),
             past_laps: Vec::new(),
@@ -273,7 +277,7 @@ impl Ride {
             self.total.speed.update(&focus);
             self.total.hr.update(&focus); 
             self.total.cadence.update(&focus);
-            self.total.power.update(&focus);
+            self.total.power.update(&focus, self.athlete.weight);
             self.total.height.update(&focus);
 
             if focus.eventLapsDone >= 0 {
