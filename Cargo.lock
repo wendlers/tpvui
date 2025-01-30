@@ -3572,8 +3572,6 @@ dependencies = [
  "notify",
  "serde",
  "serde_json",
- "wasm-bindgen-futures",
- "web-sys",
 ]
 
 [[package]]
