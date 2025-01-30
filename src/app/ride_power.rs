@@ -36,8 +36,8 @@ impl WidgetBase for Widget {
 
         // 1x2 grid
         egui::Grid::new("power_grid_1x2")
-        .min_col_width(200.0)
-        .max_col_width(200.0)
+        .min_col_width(210.0)
+        .max_col_width(210.0)
         .min_row_height(25.0)
         .num_columns(1)
         .spacing([5.0, 5.0])
@@ -53,8 +53,8 @@ impl WidgetBase for Widget {
         
         // 2x2 grid
         egui::Grid::new("power_grid_1x1_b")
-        .min_col_width(200.0)
-        .max_col_width(200.0)
+        .min_col_width(210.0)
+        .max_col_width(210.0)
         .min_row_height(100.0)
         .num_columns(1)
         .spacing([5.0, 5.0])
@@ -65,8 +65,8 @@ impl WidgetBase for Widget {
 
         // 1x1 grid
         egui::Grid::new("power_data_grid_2x2")
-        .min_col_width(100.0)
-        .max_col_width(100.0)
+        .min_col_width(105.0)
+        .max_col_width(105.0)
         .min_row_height(50.0)
         .num_columns(2)
         .spacing([5.0, 5.0])
