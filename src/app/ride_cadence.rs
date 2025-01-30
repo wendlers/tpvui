@@ -44,7 +44,7 @@ impl WidgetBase for Widget {
         .num_columns(1)
         .spacing([5.0, 5.0])
         .show(ui, |ui| {
-            self.field_1x1(ui, String::from("max bpm"), format!("{:4.0}", ride.total.cadence.max));
+            self.field_1x1(ui, String::from("max rpm"), format!("{:4.0}", ride.total.cadence.max));
             ui.end_row();
         });
     }
