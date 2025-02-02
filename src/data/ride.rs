@@ -235,6 +235,13 @@ impl Ride {
         }
     }
 
+    pub fn reset(&mut self) {
+        log::info!("Restting ride data!");
+        self.total = Metrics::new();
+        self.current_lap = Metrics::new();
+        self.past_laps = Vec::new()
+    }
+
     pub fn update(&mut self, focus: super::tpvbc::Focus) {
         // make sure we have not seen this data before
         if self.total.time < focus.time {
@@ -252,6 +259,9 @@ impl Ride {
             if focus.eventLapsDone >= 0 {
                 self.total.lap = focus.eventLapsDone as u32 + 1;
             }
+        } else if focus.time < self.total.time {
+            log::info!("Looks like a new ride has started.");
+            self.reset();
         }
         // wind data could always change in TPV, also when ride was not started yet
         self.total.wind.update(&focus);
