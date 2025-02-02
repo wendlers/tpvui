@@ -26,25 +26,13 @@ impl WidgetBase for Widget {
         egui::Grid::new("height_grid_1x1")
         .min_col_width(210.0)
         .max_col_width(210.0)
-        .min_row_height(100.0)
+        .min_row_height(115.0)
         .num_columns(1)
         .spacing([5.0, 5.0])
         .show(ui, |ui| {
             self.field_2x2(ui, String::from("★ asc. m"), format!("{:4.0}", ride.total.height.ascend));
             ui.end_row();
-            self.field_2x2(ui, String::from("★ des. m"), format!("{:4.0}", ride.total.height.descend));
-            ui.end_row();
-        });
-
-        // 1x1 grid
-        egui::Grid::new("height_data_grid_2x2")
-        .min_col_width(210.0)
-        .max_col_width(210.0)
-        .min_row_height(50.0)
-        .num_columns(1)
-        .spacing([5.0, 5.0])
-        .show(ui, |ui| {
-            self.field_1x1(ui, String::from("★ m"), format!("{:4.0}", ride.total.height.cur));
+            self.field_2x2(ui, String::from("★ slope %"), format!("{:3.0}", ride.total.height.slope));
             ui.end_row();
         });
     }

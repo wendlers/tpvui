@@ -135,52 +135,21 @@ impl Power {
 
 #[derive(Clone, PartialEq)]
 pub struct Height {
-    pub cur: u32,
-    pub min: u32,
-    pub max: u32,
     pub ascend: u32,
-    pub descend: u32,
     pub slope: i32,
-    prev: u32,
-    first: bool,
 }
 
 impl Height {
     pub fn new() -> Height {
         Height { 
-            cur: 0, 
-            min: 0, 
-            max: 0, 
             ascend: 0,
-            descend: 0, 
             slope: 0,
-            prev: 0,
-            first: true,
         }
     }
 
     fn update(&mut self, focus: &super::tpvbc::Focus) {
-        self.cur = focus.height;
-
-        if self.first || self.cur > self.max {
-            self.max = self.cur;
-        }
-
-        if self.first || self.cur < self.min {
-            self.min = self.cur;
-        }
-
-        if !self.first {
-            if self.cur > self.prev {
-                self.ascend += self.cur - self.prev;
-            } else {
-                self.descend += self.prev - self.cur;
-            }
-        }
-
+        self.ascend = focus.height;
         self.slope = focus.slope;
-        self.prev = self.cur;
-        self.first = false;
     }
 }
 
