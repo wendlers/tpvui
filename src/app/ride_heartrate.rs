@@ -44,7 +44,7 @@ impl WidgetBase for Widget {
         .show(ui, |ui| {
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
                 ui.label(egui::RichText::new(format!("Z{:1.0} {}", 
-                    ride.athlete.hr_zones.zone(ride.total.hr.cur),
+                    ride.athlete.hr_zones.zone(ride.total.hr.cur) + 1,
                     ride.athlete.hr_zones.name(ride.total.hr.cur)))
                     .size(21.0).color(egui::Color32::LIGHT_GREEN));
             });
