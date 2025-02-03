@@ -77,7 +77,7 @@ impl HrZones {
             }
             n += 1;
         }
-        self.zones.len() as u32
+        0
     }
 
     pub fn name(&self, value: u32) -> String {
@@ -150,7 +150,7 @@ impl PwrZones {
             }
             n += 1;
         }
-        self.zones.len() as u32
+        0
     }
 
     pub fn name(&self, value: u32) -> String {

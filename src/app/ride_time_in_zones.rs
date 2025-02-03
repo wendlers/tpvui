@@ -24,8 +24,10 @@ impl WidgetBase for Widget {
     }
 
     fn show_window(&self, ui: &mut egui::Ui, df: &Facade) {
-        let _ride = df.ride();        
+        let ride = df.ride();        
         let w = 25.0;
+        let hr_percentages = ride.time_in_hr_zones.percentages();
+        let pwr_percentages = ride.time_in_pwr_zones.percentages(); 
 
         let zone_formatter = |mark: GridMark, _range: &RangeInclusive<f64>| -> String {
             let v = mark.value as i32;
@@ -46,55 +48,55 @@ impl WidgetBase for Widget {
                 .placement(egui_plot::VPlacement::Top)];
      
         let data_z1 = BarChart::new(vec![
-            Bar::new(w * 0.5, 5.0).name("HR Z1"),
-            Bar::new(w * 1.75, 10.0).name("PWR Z1"),
+            Bar::new(w * 0.5, hr_percentages[0]).name("HR Z1"),
+            Bar::new(w * 1.75, pwr_percentages[0]).name("PWR Z1"),
         ])
         .width(w)
         .name("Z1");
 
         let data_z2 = BarChart::new(vec![
-            Bar::new(w * 0.5, 10.0).name("HR Z2"),
-            Bar::new(w * 1.75, 5.0).name("PWR Z2"),
+            Bar::new(w * 0.5, hr_percentages[1]).name("HR Z2"),
+            Bar::new(w * 1.75, pwr_percentages[1]).name("PWR Z2"),
         ])
         .width(w)
         .name("Z2")
         .stack_on(&[&data_z1]);
 
         let data_z3 = BarChart::new(vec![
-            Bar::new(w * 0.5, 45.0).name("HR Z3"),
-            Bar::new(w * 1.75, 45.0).name("PWR Z3"),
+            Bar::new(w * 0.5, hr_percentages[2]).name("HR Z3"),
+            Bar::new(w * 1.75, pwr_percentages[2]).name("PWR Z3"),
         ])
         .width(w)
         .name("Z3")
         .stack_on(&[&data_z2]);
 
         let data_z4 = BarChart::new(vec![
-            Bar::new(w * 0.5, 20.0).name("HR Z4"),
-            Bar::new(w * 1.75, 20.0).name("PWR Z4"),
+            Bar::new(w * 0.5, hr_percentages[3]).name("HR Z4"),
+            Bar::new(w * 1.75, pwr_percentages[3]).name("PWR Z4"),
         ])
         .width(w)
         .name("Z4")
         .stack_on(&[&data_z3]);
 
         let data_z5 = BarChart::new(vec![
-            Bar::new(w * 0.5, 10.0).name("HR Z5"),
-            Bar::new(w * 1.75, 10.0).name("PWR Z5"),
+            Bar::new(w * 0.5, hr_percentages[4]).name("HR Z5"),
+            Bar::new(w * 1.75, pwr_percentages[4]).name("PWR Z5"),
         ])
         .width(w)
         .name("Z5")
         .stack_on(&[&data_z4]);
 
         let data_z6 = BarChart::new(vec![
-            Bar::new(w * 0.5, 7.0).name("HR Z6"),
-            Bar::new(w * 1.75, 7.0).name("PWR Z6"),
+            Bar::new(w * 0.5, hr_percentages[5]).name("HR Z6"),
+            Bar::new(w * 1.75, pwr_percentages[5]).name("PWR Z6"),
         ])
         .width(w)
         .name("Z6")
         .stack_on(&[&data_z5]);
 
         let data_z7 = BarChart::new(vec![
-            Bar::new(w * 0.5, 3.0).name("HR Z7"),
-            Bar::new(w * 1.75, 3.0).name("PWR Z7"),
+            Bar::new(w * 0.5, hr_percentages[6]).name("HR Z7"),
+            Bar::new(w * 1.75, pwr_percentages[6]).name("PWR Z7"),
         ])
         .width(w)
         .name("Z7")

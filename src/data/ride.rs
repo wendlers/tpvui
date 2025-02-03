@@ -218,11 +218,71 @@ impl Metrics {
 }
 
 #[derive(Clone, PartialEq)]
+pub struct TimeInZones {
+    pub zones: Vec<u32>,
+}
+
+impl TimeInZones {
+    pub fn new(number_of_zones: u32) -> TimeInZones {
+        let mut v: Vec<u32> = Vec::new();
+
+        for _i in 0..number_of_zones {
+            v.push(0);
+        }
+
+        TimeInZones {
+            zones: v,
+        }
+    }
+
+    pub fn add_time(&mut self, zone: u32, secs: u32) {
+        if zone < self.zones.len() as u32 {
+            self.zones[zone as usize] += secs;
+        }
+    }
+
+    fn total_time(&self) -> u32 {
+        let mut total: u32 = 0;
+
+        for t in self.zones.iter() {
+            total += t;
+        }
+
+        total
+    }
+
+    pub fn percentages(&self) -> Vec<f64> {
+        let mut pc:Vec<f64> = Vec::new();
+        let total_time = self.total_time();
+
+        if total_time == 0 {
+            let mut p = 100.0;
+
+            for _z in self.zones.iter() {
+                pc.push(p);
+                p = 0.0;
+            }
+        } else {
+            let total_pc = 100.0 / (total_time as f64);
+        
+            for z in self.zones.iter() {
+                let tinz = *z;
+                let tinz_pc = (tinz as f64) * total_pc;
+                pc.push(tinz_pc); 
+            }    
+        }
+        pc
+    }
+}
+
+#[derive(Clone, PartialEq)]
 pub struct Ride {
     pub athlete: Athlete,
     pub total: Metrics,
     pub current_lap: Metrics,
     pub past_laps: Vec<Metrics>,
+    pub time_in_hr_zones: TimeInZones,
+    pub time_in_pwr_zones: TimeInZones,
 }
 
 impl Ride {
@@ -232,6 +292,8 @@ impl Ride {
             total: Metrics::new(),
             current_lap: Metrics::new(),
             past_laps: Vec::new(),
+            time_in_hr_zones: TimeInZones::new(7),
+            time_in_pwr_zones: TimeInZones::new(7),
         }
     }
 
@@ -245,6 +307,13 @@ impl Ride {
     pub fn update(&mut self, focus: super::tpvbc::Focus) {
         // make sure we have not seen this data before
         if self.total.time < focus.time {
+            let delta_to_last_total_time = focus.time - self.total.time;
+            let hr_zone = self.athlete.hr_zones.zone(focus.heartrate);
+            let pwr_zone = self.athlete.pwr_zones.zone(focus.power);
+            self.time_in_hr_zones.add_time(hr_zone, delta_to_last_total_time);
+            self.time_in_pwr_zones.add_time(pwr_zone, delta_to_last_total_time);
+
+
             self.total.time = focus.time;
             self.total.distance = (focus.distance as f32) / 1000.0;
             self.total.tss = focus.tss;
