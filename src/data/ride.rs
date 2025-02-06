@@ -37,6 +37,7 @@ pub struct HearRate {
     pub min: u32,
     pub max: u32,
     pub avg: u32,
+    pub history: Vec<u32>,
     first: bool,
 }
 
@@ -47,12 +48,14 @@ impl HearRate {
             min:  0,  
             max:  0, 
             avg:  0,
+            history: vec![0],
             first: true, 
         }
     }
 
     fn update(&mut self, focus: &super::tpvbc::Focus) {
         self.cur = focus.heartrate;
+        self.history.push(self.cur);
 
         if self.first || self.cur < self.min {
             self.min = self.cur;
@@ -73,6 +76,7 @@ pub struct Cadence {
     pub cur: u32,
     pub max: u32,
     pub avg: u32,
+    pub history: Vec<u32>,
     first: bool,
 }
 
@@ -82,12 +86,14 @@ impl Cadence {
             cur: 0,  
             max: 0, 
             avg: 0, 
+            history: vec![0],
             first: true,
         }
     }
 
     fn update(&mut self, focus: &super::tpvbc::Focus) {
         self.cur = focus.cadence;
+        self.history.push(self.cur);
 
         if self.first || self.cur > self.max {
             self.max = self.cur;
@@ -105,6 +111,7 @@ pub struct Power {
     pub max: u32,
     pub nrm: u32,
     pub wpk: f32,
+    pub history: Vec<u32>,
     first: bool,
 }
 
@@ -115,12 +122,14 @@ impl Power {
             max: 0, 
             nrm: 0, 
             wpk: 0.0,
+            history: vec![0],
             first: true,
         }
     }
 
     fn update(&mut self, focus: &super::tpvbc::Focus, weight: f32) {
         self.cur = focus.power;
+        self.history.push(self.cur);
 
         if self.first || self.cur > self.max {
             self.max = self.cur;
@@ -301,7 +310,9 @@ impl Ride {
         log::info!("Restting ride data!");
         self.total = Metrics::new();
         self.current_lap = Metrics::new();
-        self.past_laps = Vec::new()
+        self.past_laps = Vec::new();
+        self.time_in_hr_zones = TimeInZones::new(7);
+        self.time_in_pwr_zones = TimeInZones::new(7);
     }
 
     pub fn update(&mut self, focus: super::tpvbc::Focus) {

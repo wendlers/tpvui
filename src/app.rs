@@ -20,6 +20,7 @@ mod ride_wind;
 mod ride_hight;
 mod ride_cadence;
 mod ride_time_in_zones;
+mod ride_history;
 mod setings_source;
 
 const APP_KEY: &str = "tpvui";
@@ -43,6 +44,7 @@ pub struct TpvUiApp {
     widget_ride_hight: ride_hight::Widget,
     widget_ride_cadence: ride_cadence::Widget,
     widget_ride_time_in_zones: ride_time_in_zones::Widget,
+    widget_ride_history: ride_history::Widget,
     widget_settings_source: setings_source::Widget,
 
     #[serde(skip)]
@@ -67,6 +69,7 @@ impl Default for TpvUiApp {
             widget_ride_hight: ride_hight::Widget::new(),
             widget_ride_cadence: ride_cadence::Widget::new(),
             widget_ride_time_in_zones: ride_time_in_zones::Widget::new(),
+            widget_ride_history: ride_history::Widget::new(),
             widget_settings_source: setings_source::Widget::new(),
             df: Facade::new(),
         }
@@ -162,6 +165,7 @@ impl TpvUiApp {
                         self.widget_ride_hight.show_label(ui);
                         self.widget_ride_cadence.show_label(ui);
                         self.widget_ride_time_in_zones.show_label(ui);
+                        self.widget_ride_history.show_label(ui);
                     });
                     ui.collapsing(egui::RichText::new("TPV Raw").size(16.0), |ui| {     
                         self.widged_tpv_focus.show_label(ui);
@@ -239,6 +243,7 @@ impl TpvUiApp {
         TpvUiApp::window_show_hide(ctx, &self.widget_ride_hight, &self.df);
         TpvUiApp::window_show_hide(ctx, &self.widget_ride_cadence, &self.df);
         TpvUiApp::window_show_hide(ctx, &self.widget_ride_time_in_zones, &self.df);
+        TpvUiApp::window_show_hide(ctx, &self.widget_ride_history, &self.df);
 
         if self.widget_settings_source.is_visible() {            
             egui::Window::new(self.widget_settings_source.get_title()).show(ctx, |ui| {
