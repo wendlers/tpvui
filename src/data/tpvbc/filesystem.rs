@@ -1,3 +1,4 @@
+use unicode_bom::Bom;
 use std::{sync::Arc, path::Path, sync::mpsc, thread, time, fs};
 
 use crate::data::ride::Ride;
@@ -124,7 +125,7 @@ impl BcastStreamFocusWorker {
                                 let mut ride_locked = ride.lock().unwrap();
                                 ride_locked.update(focus_locked.clone());
                             }
-                        })(&content[3..]), // remove utf-8 BOM
+                        })(&content[Bom::from(content.as_bytes()).len()..]), // remove utf-8 BOM if present
                         Err(err) => (|e| {
                             log::warn!("Failed to read 'focus': {}", e);
                             <BcastStreamFocus as BcastStreamBase>::update_state_t(&source, BcastStatus::NotOk);
